@@ -1,0 +1,41 @@
+# ╔════════════════════════════════════════════════════════════╗
+# ║ FSChrono v2 — Dépendances backend Python                  ║
+# ║ Python 3.10+ (testé sur 3.13)                              ║
+# ║ Installation : pip install -r requirements.txt             ║
+# ╚════════════════════════════════════════════════════════════╝
+
+# ── Django + REST ─────────────────────────────────────────────
+Django>=5.1,<5.2
+djangorestframework>=3.15,<3.16
+djangorestframework-simplejwt>=5.3,<5.5
+django-cors-headers>=4.4,<5.0
+django-filter>=24.0,<26.0
+
+# ── Documentation API (OpenAPI / Swagger) ─────────────────────
+drf-spectacular>=0.27,<0.30
+
+# ── Base de données ───────────────────────────────────────────
+psycopg2-binary>=2.9,<3.0
+
+# ── Manipulation Excel (templates + imports chefs) ────────────
+openpyxl>=3.1,<4.0
+
+# ── Solver de planification ───────────────────────────────────
+# OR-Tools CP-SAT — cœur algorithmique
+ortools>=9.10,<10.0
+
+# ── Génération de documents ───────────────────────────────────
+# PDF officiel UEB via template HTML/CSS
+weasyprint>=62.0,<70.0
+# Export Word (planning au format .docx)
+python-docx>=1.1,<2.0
+# Manipulation d'images (logos, cachet)
+Pillow>=10.0,<13.0
+
+# ── Async (optionnel, activer si solver lent) ─────────────────
+celery>=5.4,<6.0
+redis>=5.0,<6.0
+
+# ── Utilitaires ───────────────────────────────────────────────
+# Lecture des variables d'environnement depuis .env
+python-decouple>=3.8,<4.0
