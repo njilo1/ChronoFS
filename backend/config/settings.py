@@ -97,10 +97,18 @@ DATABASES = {
 AUTH_USER_MODEL = 'core.User'
 
 
-# ── Validation mots de passe (assouplie en dev) ──────────────────────────────
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-]
+# ── Validation mots de passe ─────────────────────────────────────────────────
+# En dev (DEBUG=True), validators désactivés pour autoriser les mots de
+# passe courts du seed (dar123, tic123…). Activés en production.
+if DEBUG:
+    AUTH_PASSWORD_VALIDATORS = []
+else:
+    AUTH_PASSWORD_VALIDATORS = [
+        {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+        {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 8}},
+        {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+        {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    ]
 
 
 # ── Internationalisation ─────────────────────────────────────────────────────
