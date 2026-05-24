@@ -12,6 +12,7 @@ DAR : CRUD complet. Chef : lecture seule (utile pour savoir vers quelle
 semaine envoyer son fichier).
 """
 
+from django.http import HttpResponse
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
@@ -19,10 +20,15 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from core.constants import StatutSemaine
-from core.models import Seance, Semaine
+from core.models import ArchivePlanning, Seance, Semaine
 from core.permissions import IsDAR, IsDARorReadOnly
 from core.scheduling.generation_service import generer_planning
-from core.serializers import SeanceSerializer, SemaineSerializer
+from core.serializers import (
+    ArchivePlanningSerializer,
+    SeanceSerializer,
+    SemaineSerializer,
+)
+from core.services.exports_service import exporter_docx, exporter_pdf
 
 
 class SemaineViewSet(viewsets.ModelViewSet):
@@ -98,3 +104,52 @@ class SemaineViewSet(viewsets.ModelViewSet):
         if request.user.role == Role.CHEF_DEPT:
             qs = qs.filter(filiere__departement_id=request.user.departement_id)
         return Response(SeanceSerializer(qs, many=True).data)
+
+    # ── Export PDF (DAR) ─────────────────────────────────────────────────────
+    @extend_schema(
+        summary="Exporter le planning de la semaine en PDF officiel UEB",
+        description=(
+            "Génère le PDF, crée un ArchivePlanning (version+1) et renvoie "
+            "le fichier en téléchargement. Toutes les versions précédentes "
+            "restent accessibles via /archives/."
+        ),
+    )
+    @action(detail=True, methods=['post'], url_path='export-pdf', permission_classes=[IsDAR])
+    def export_pdf(self, request, pk=None):
+        semaine = self.get_object()
+        contenu, nom, _archive = exporter_pdf(semaine, request.user)
+        response = HttpResponse(contenu, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{nom}"'
+        return response
+
+    # ── Export DOCX (DAR) ────────────────────────────────────────────────────
+    @extend_schema(
+        summary="Exporter le planning de la semaine en Word (.docx)",
+    )
+    @action(detail=True, methods=['post'], url_path='export-docx', permission_classes=[IsDAR])
+    def export_docx(self, request, pk=None):
+        semaine = self.get_object()
+        contenu, nom, _archive = exporter_docx(semaine, request.user)
+        response = HttpResponse(
+            contenu,
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        )
+        response['Content-Disposition'] = f'attachment; filename="{nom}"'
+        return response
+
+    # ── Liste des archives d'export (toute version) ──────────────────────────
+    @extend_schema(
+        summary="Liste des exports archivés pour cette semaine",
+        responses={200: ArchivePlanningSerializer(many=True)},
+    )
+    @action(detail=True, methods=['get'])
+    def archives(self, request, pk=None):
+        semaine = self.get_object()
+        archives = (
+            ArchivePlanning.objects
+            .filter(semaine=semaine)
+            .select_related('exporte_par')
+            .order_by('-version')
+        )
+        ser = ArchivePlanningSerializer(archives, many=True, context={'request': request})
+        return Response(ser.data)

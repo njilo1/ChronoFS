@@ -1,0 +1,269 @@
+{% load static %}<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Planning {{ semaine.date_debut|date:"d/m/Y" }} — {{ semaine.date_fin|date:"d/m/Y" }}</title>
+  <style>
+    /* ── Format page UEB officiel ──────────────────────────────────────── */
+    @page {
+      size: A4 landscape;
+      margin: 1.5cm;
+
+      /* Pied de page : numéro de page centré */
+      @bottom-center {
+        content: "Page " counter(page) " sur " counter(pages);
+        font-family: Arial, Calibri, sans-serif;
+        font-size: 8pt;
+        color: #555;
+      }
+    }
+
+    body {
+      font-family: Arial, Calibri, sans-serif;
+      font-size: 10pt;
+      color: #000;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* ── En-tête bilingue ─────────────────────────────────────────────── */
+    .header {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+      margin-bottom: 8mm;
+      border-bottom: 1pt solid #000;
+      padding-bottom: 4mm;
+    }
+    .header > div {
+      display: table-cell;
+      vertical-align: top;
+      font-size: 8.5pt;
+      line-height: 1.25;
+    }
+    .header .fr   { width: 38%; text-align: left;   padding-right: 4mm; }
+    .header .ctr  { width: 24%; text-align: center; vertical-align: middle; }
+    .header .en   { width: 38%; text-align: right;  padding-left: 4mm; }
+
+    .header .ctr img {
+      display: block;
+      margin: 0 auto 4mm;
+      width: 24mm;
+      height: auto;
+    }
+
+    .stars { letter-spacing: 1px; }
+
+    .ref {
+      margin-top: 3mm;
+      font-weight: bold;
+      font-size: 9pt;
+    }
+    .em-date {
+      margin-top: 3mm;
+      font-style: italic;
+      font-size: 9pt;
+    }
+
+    /* ── Titre principal ──────────────────────────────────────────────── */
+    .titre {
+      text-align: center;
+      margin: 6mm 0 2mm;
+      font-size: 14pt;
+      font-weight: bold;
+      letter-spacing: 0.5pt;
+    }
+    .sous-titre {
+      text-align: center;
+      margin: 0 0 6mm;
+      font-size: 11pt;
+      font-weight: bold;
+    }
+
+    /* ── Bandeau par salle ─────────────────────────────────────────────── */
+    .meta-salle {
+      margin: 0 0 3mm;
+      padding: 2mm 3mm;
+      background: #f0f0f0;
+      border: 0.5pt solid #888;
+      font-size: 9.5pt;
+    }
+    .meta-salle b { font-weight: bold; }
+
+    /* ── Tableau jours × créneaux ──────────────────────────────────────── */
+    table.grille {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      margin-bottom: 8mm;
+      page-break-inside: avoid;
+    }
+    table.grille th,
+    table.grille td {
+      border: 0.5pt solid #000;
+      padding: 2mm;
+      vertical-align: top;
+      text-align: left;
+      font-size: 8.5pt;
+      word-wrap: break-word;
+    }
+    table.grille th {
+      background: #e8e8e8;
+      font-weight: bold;
+      text-align: center;
+      font-size: 9pt;
+    }
+    table.grille td.horaire {
+      background: #f5f5f5;
+      text-align: center;
+      font-weight: bold;
+      width: 16mm;
+      vertical-align: middle;
+    }
+    table.grille .cours .classe     { font-weight: bold; font-size: 8pt; }
+    table.grille .cours .code-ue    { color: #444; font-size: 8pt; }
+    table.grille .cours .intitule   { font-size: 8pt; }
+    table.grille .cours .enseignant { font-style: italic; color: #333; font-size: 7.5pt; }
+
+    /* ── Bloc NB (dernière page) ───────────────────────────────────────── */
+    .nb {
+      margin-top: 8mm;
+      font-size: 8.5pt;
+      font-style: italic;
+      line-height: 1.35;
+      page-break-inside: avoid;
+    }
+    .nb b { font-weight: bold; font-style: normal; }
+
+    /* ── Signature ─────────────────────────────────────────────────────── */
+    .signature {
+      margin-top: 12mm;
+      text-align: right;
+      page-break-inside: avoid;
+    }
+    .signature .titre-signataire {
+      font-size: 11pt;
+      font-weight: bold;
+      margin-bottom: 4mm;
+    }
+    .signature img {
+      width: 45mm;
+      height: auto;
+    }
+
+    /* Une nouvelle salle = nouvelle page (sauf pour la première) */
+    .salle-page { page-break-before: always; }
+    .salle-page:first-of-type { page-break-before: avoid; }
+
+    .vide {
+      text-align: center;
+      font-style: italic;
+      color: #777;
+      padding: 20mm 0;
+    }
+  </style>
+</head>
+<body>
+
+  {% comment %}
+    En-tête bilingue : @page bottom-center gère seulement la pagination.
+    L'en-tête riche est placée en haut du document. Chaque salle débute
+    sur une nouvelle page (.salle-page) et la grille a page-break-inside
+    avoid pour éviter une coupure visuelle au milieu d'une demi-journée.
+  {% endcomment %}
+  <div class="header">
+    <div class="fr">
+      <div>RÉPUBLIQUE DU CAMEROUN</div>
+      <div>PAIX – TRAVAIL – PATRIE</div>
+      <div class="stars">*******</div>
+      <div>MINISTÈRE DE L'ENSEIGNEMENT SUPÉRIEUR</div>
+      <div class="stars">*******</div>
+      <div>UNIVERSITÉ D'ÉBOLOWA</div>
+      <div class="stars">*******</div>
+      <div>FACULTÉ DES SCIENCES</div>
+      <div class="stars">*******</div>
+      <div>DIVISION DES AFFAIRES ACADÉMIQUES, DE LA SCOLARITÉ ET DE LA RECHERCHE</div>
+      <div class="stars">*******</div>
+      <div class="ref">N° {{ semaine.numero_reference|default:"…………" }}/UEb/DFS/DAARS</div>
+    </div>
+
+    <div class="ctr">
+      <img src="{{ logo_ueb_path }}" alt="Logo UEB">
+      <img src="{{ logo_fs_path }}"  alt="Logo FS">
+    </div>
+
+    <div class="en">
+      <div>REPUBLIC OF CAMEROON</div>
+      <div>PEACE-WORK-FATHERLAND</div>
+      <div class="stars">******</div>
+      <div>MINISTRY OF HIGHER EDUCATION</div>
+      <div class="stars">*******</div>
+      <div>THE UNIVERSITY OF EBOLOWA</div>
+      <div class="stars">*******</div>
+      <div>FACULTY OF SCIENCE</div>
+      <div class="stars">*******</div>
+      <div>DIVISION OF ACADEMIC AFFAIRS, EDUCATION AND RESEARCH</div>
+      <div class="stars">*******</div>
+      <div class="em-date">Ebolowa, le {{ date_emission|date:"d F Y" }}</div>
+    </div>
+  </div>
+
+  <div class="titre">PLANNING DES COURS</div>
+  <div class="sous-titre">ANNÉE ACADÉMIQUE {{ semaine.annee_academique.libelle }}</div>
+
+  {# ── Une section par salle ayant au moins une séance ────────────────── #}
+  {% for bloc in salles_pleines %}
+    <div class="salle-page">
+      <div class="meta-salle">
+        <b>Semestre :</b> {{ semaine.semestre }} &nbsp;·&nbsp;
+        <b>Campus :</b> {{ bloc.salle.campus.nom }} &nbsp;·&nbsp;
+        <b>Salle :</b> {{ bloc.salle.nom }} &nbsp;·&nbsp;
+        <b>Semaine :</b> Du {{ semaine.date_debut|date:"d/m/Y" }} au {{ semaine.date_fin|date:"d/m/Y" }}
+      </div>
+
+      <table class="grille">
+        <thead>
+          <tr>
+            <th style="width: 16mm;">Horaires</th>
+            {% for jour in jours_libelles %}<th>{{ jour }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for ligne in bloc.lignes %}
+            <tr>
+              <td class="horaire">{{ ligne.horaire }}</td>
+              {% for cell in ligne.jours %}
+                <td>
+                  {% if cell %}
+                    <div class="cours">
+                      <div class="classe">{{ cell.classe }}</div>
+                      <div class="code-ue">{{ cell.code_ue }}</div>
+                      <div class="intitule">{{ cell.intitule }}</div>
+                      <div class="enseignant">{{ cell.enseignant }}</div>
+                    </div>
+                  {% endif %}
+                </td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% empty %}
+    <div class="vide">Aucune séance planifiée pour cette semaine.</div>
+  {% endfor %}
+
+  {# ── Bloc NB + signature : sur la même dernière page logique ────────── #}
+  <div class="nb">
+    <b>NB :</b> <b>1.</b> Ce calendrier est dynamique et susceptible d'être modifié. Les étudiants sont invités à bien vouloir régulièrement (quotidiennement) consulter le babillard pour s'enquérir des dernières modifications.
+    <br><br>
+    <b>2.</b> Les salles A, B, C, D, E de TP et Multimédia sont sur le site du Campus principal (Décanat de la Faculté des Sciences) et les salles F, G, H, I et J, K, L et O sur le site du campus secondaire (Lycée Classique). Quant aux salles M et N, elles se trouvent au campus C en face du CRA. Vous trouverez sur la porte de chaque salle la lettre correspondante. Et les salles telles que A.M, B.M, C.M, D.M, Amphi 500, Terrain sont au campus de Monatélé.
+  </div>
+
+  <div class="signature">
+    <div class="titre-signataire">Le Doyen</div>
+    <img src="{{ cachet_path }}" alt="Cachet du Doyen">
+  </div>
+
+</body>
+</html>

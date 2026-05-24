@@ -23,6 +23,7 @@ from .imports import (
     UploadImportSerializer,
 )
 from .seances import SeanceEditSerializer, SeanceSerializer
+from .archives import ArchivePlanningSerializer
 
 
 __all__ = [
@@ -42,4 +43,6 @@ __all__ = [
     'DemandeCoursSerializer', 'UploadImportSerializer',
     # Séances
     'SeanceSerializer', 'SeanceEditSerializer',
+    # Archives
+    'ArchivePlanningSerializer',
 ]
