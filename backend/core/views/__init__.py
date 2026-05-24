@@ -18,6 +18,7 @@ from .imports import (
     ImportPreviewView,
     TemplateExcelView,
 )
+from .seances import SeanceViewSet
 
 
 __all__ = [
@@ -36,4 +37,6 @@ __all__ = [
     'SemaineViewSet',
     # Imports
     'ImportPlanningViewSet', 'ImportPreviewView', 'TemplateExcelView',
+    # Séances
+    'SeanceViewSet',
 ]

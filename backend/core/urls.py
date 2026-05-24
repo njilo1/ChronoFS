@@ -28,6 +28,7 @@ from core.views import (
     MesUEsViewSet,
     RefreshView,
     SalleViewSet,
+    SeanceViewSet,
     SemaineViewSet,
     TemplateExcelView,
     UEViewSet,
@@ -46,6 +47,7 @@ router.register('annees-academiques',  AnneeAcademiqueViewSet,  basename='annee'
 router.register('semaines',            SemaineViewSet,          basename='semaine')
 router.register('chefs-departement',   ChefDeptViewSet,         basename='chef-dept')
 router.register('imports',             ImportPlanningViewSet,   basename='import')
+router.register('seances',             SeanceViewSet,           basename='seance')
 
 
 # ── Router secondaire (chef de département) ──────────────────────────────────
