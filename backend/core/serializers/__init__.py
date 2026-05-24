@@ -16,6 +16,12 @@ from .referentiel import (
     UESerializer,
 )
 from .semaines import SemaineSerializer
+from .imports import (
+    DemandeCoursSerializer,
+    ImportPlanningHistoriqueSerializer,
+    ImportPlanningSerializer,
+    UploadImportSerializer,
+)
 
 
 __all__ = [
@@ -30,4 +36,7 @@ __all__ = [
     'AnneeAcademiqueSerializer',
     # Hebdomadaire
     'SemaineSerializer',
+    # Imports
+    'ImportPlanningSerializer', 'ImportPlanningHistoriqueSerializer',
+    'DemandeCoursSerializer', 'UploadImportSerializer',
 ]

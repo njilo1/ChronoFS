@@ -20,6 +20,8 @@ from core.views import (
     DepartementViewSet,
     EnseignantViewSet,
     FiliereViewSet,
+    ImportPlanningViewSet,
+    ImportPreviewView,
     LoginView,
     MeView,
     MesEnseignantsViewSet,
@@ -27,6 +29,7 @@ from core.views import (
     RefreshView,
     SalleViewSet,
     SemaineViewSet,
+    TemplateExcelView,
     UEViewSet,
 )
 
@@ -42,6 +45,7 @@ router.register('ues',                 UEViewSet,               basename='ue')
 router.register('annees-academiques',  AnneeAcademiqueViewSet,  basename='annee')
 router.register('semaines',            SemaineViewSet,          basename='semaine')
 router.register('chefs-departement',   ChefDeptViewSet,         basename='chef-dept')
+router.register('imports',             ImportPlanningViewSet,   basename='import')
 
 
 # ── Router secondaire (chef de département) ──────────────────────────────────
@@ -59,6 +63,10 @@ urlpatterns = [
     # Endpoints chef de département (montés sous /mon-departement/)
     path('mon-departement/', include(router_chef.urls)),
 
-    # Router principal (référentiel DAR + semaines + chefs-departement)
+    # Imports — endpoints non-routables par DefaultRouter
+    path('template-excel/',    TemplateExcelView.as_view(),  name='template-excel'),
+    path('imports/preview/',   ImportPreviewView.as_view(),  name='imports-preview'),
+
+    # Router principal (référentiel DAR + semaines + chefs-departement + imports)
     path('', include(router.urls)),
 ]

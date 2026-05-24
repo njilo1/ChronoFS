@@ -13,6 +13,11 @@ from .referentiel import (
     UEViewSet,
 )
 from .semaines import SemaineViewSet
+from .imports import (
+    ImportPlanningViewSet,
+    ImportPreviewView,
+    TemplateExcelView,
+)
 
 
 __all__ = [
@@ -29,4 +34,6 @@ __all__ = [
     'MesUEsViewSet', 'MesEnseignantsViewSet',
     # Hebdomadaire
     'SemaineViewSet',
+    # Imports
+    'ImportPlanningViewSet', 'ImportPreviewView', 'TemplateExcelView',
 ]
