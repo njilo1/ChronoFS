@@ -45,11 +45,16 @@
     .header .ctr  { width: 24%; text-align: center; vertical-align: middle; }
     .header .en   { width: 38%; text-align: right;  padding-left: 4mm; }
 
-    .header .ctr img {
-      display: block;
-      margin: 0 auto 4mm;
-      width: 24mm;
-      height: auto;
+    .header-logos {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4mm;
+    }
+    .header-logos img {
+      width: 22mm;
+      height: 22mm;
+      object-fit: contain;
     }
 
     .stars { letter-spacing: 1px; }
@@ -125,6 +130,20 @@
     table.grille .cours .intitule   { font-size: 8pt; }
     table.grille .cours .enseignant { font-style: italic; color: #333; font-size: 7.5pt; }
 
+    /* ── Lignes de pause entre les créneaux ──────────────────────────── */
+    table.grille tr.pause-row td {
+      background: #F3F4F6;
+      padding: 1mm 2mm;
+      height: 6mm;
+    }
+    table.grille tr.pause-row td.horaire {
+      background: #F3F4F6;
+      font-weight: normal;
+      font-style: italic;
+      font-size: 7.5pt;
+      color: #555;
+    }
+
     /* ── Bloc NB (dernière page) ───────────────────────────────────────── */
     .nb {
       margin-top: 8mm;
@@ -140,11 +159,6 @@
       margin-top: 12mm;
       text-align: right;
       page-break-inside: avoid;
-    }
-    .signature .titre-signataire {
-      font-size: 11pt;
-      font-weight: bold;
-      margin-bottom: 4mm;
     }
     .signature img {
       width: 45mm;
@@ -188,8 +202,10 @@
     </div>
 
     <div class="ctr">
-      <img src="{{ logo_ueb_path }}" alt="Logo UEB">
-      <img src="{{ logo_fs_path }}"  alt="Logo FS">
+      <div class="header-logos">
+        <img src="{{ logo_ueb_path }}" alt="Logo UEB">
+        <img src="{{ logo_fs_path }}"  alt="Logo FS">
+      </div>
     </div>
 
     <div class="en">
@@ -230,7 +246,7 @@
         </thead>
         <tbody>
           {% for ligne in bloc.lignes %}
-            <tr>
+            <tr{% if ligne.type == 'pause' %} class="pause-row"{% endif %}>
               <td class="horaire">{{ ligne.horaire }}</td>
               {% for cell in ligne.jours %}
                 <td>
@@ -261,7 +277,6 @@
   </div>
 
   <div class="signature">
-    <div class="titre-signataire">Le Doyen</div>
     <img src="{{ cachet_path }}" alt="Cachet du Doyen">
   </div>
 

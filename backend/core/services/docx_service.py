@@ -18,10 +18,29 @@ from docx import Document
 from docx.enum.section import WD_ORIENT
 from docx.enum.table import WD_ALIGN_VERTICAL
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 from docx.shared import Cm, Inches, Pt, RGBColor
 
 from core.constants import HORAIRES_CRENEAUX, Jour
 from core.models import Salle, Seance, Semaine
+
+
+_PAUSES_HORAIRES = [
+    ('10:00', '10:15'),
+    ('12:45', '13:00'),
+    ('15:30', '15:45'),
+]
+
+
+def _set_cell_bg(cell, hex_color: str) -> None:
+    """Applique un fond de couleur à une cellule de tableau Word."""
+    tcPr = cell._tc.get_or_add_tcPr()
+    shd = OxmlElement('w:shd')
+    shd.set(qn('w:val'), 'clear')
+    shd.set(qn('w:color'), 'auto')
+    shd.set(qn('w:fill'), hex_color)
+    tcPr.append(shd)
 
 
 _ORDRE_CAMPUS = {
@@ -227,8 +246,8 @@ def _ecrire_bloc_en(cell):
 
 
 def _construire_tableau(doc, seances_salle):
-    """Tableau 7 colonnes (Horaires + Lundi..Samedi) × 4 lignes (créneaux)."""
-    table = doc.add_table(rows=5, cols=7)
+    """Tableau 7 colonnes × 8 lignes (1 header + 4 créneaux + 3 pauses)."""
+    table = doc.add_table(rows=8, cols=7)
     table.style = 'Light Grid Accent 1'
 
     # En-têtes
@@ -241,12 +260,13 @@ def _construire_tableau(doc, seances_salle):
         r = p.add_run(label)
         r.bold = True; r.font.size = Pt(9)
 
-    # Lignes par créneau
+    # Lignes alternées créneau / pause (row_idx commence à 1)
+    row_idx = 1
     for creneau_idx in range(4):
         deb, fin = HORAIRES_CRENEAUX[creneau_idx]
-        row = table.rows[creneau_idx + 1]
+        row = table.rows[row_idx]
 
-        # Colonne 0 : horaire
+        # Colonne 0 : horaire cours
         cell = row.cells[0]
         cell.text = ''
         p = cell.paragraphs[0]
@@ -273,3 +293,25 @@ def _construire_tableau(doc, seances_salle):
             ens_run = p.add_run(ens)
             ens_run.italic = True
             ens_run.font.size = Pt(7.5)
+
+        row_idx += 1
+
+        # Ligne de pause après les 3 premiers créneaux
+        if creneau_idx < 3:
+            pd, pf = _PAUSES_HORAIRES[creneau_idx]
+            pause_row = table.rows[row_idx]
+
+            pcell = pause_row.cells[0]
+            pcell.text = ''
+            pp = pcell.paragraphs[0]
+            pp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            pr = pp.add_run(_hum_horaire(pd, pf))
+            pr.italic = True; pr.font.size = Pt(7.5)
+            _set_cell_bg(pcell, 'F3F4F6')
+
+            for jour_idx in range(6):
+                jcell = pause_row.cells[jour_idx + 1]
+                jcell.text = ''
+                _set_cell_bg(jcell, 'F3F4F6')
+
+            row_idx += 1

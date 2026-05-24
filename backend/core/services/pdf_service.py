@@ -25,6 +25,13 @@ from django.template.loader import render_to_string
 from weasyprint import HTML
 
 from core.constants import HORAIRES_CRENEAUX, Jour
+
+# Horaires des pauses entre créneaux (index 0..2 → après C0, C1, C2)
+_PAUSES = [
+    ('10:00', '10:15'),
+    ('12:45', '13:00'),
+    ('15:30', '15:45'),
+]
 from core.models import Salle, Seance, Semaine
 
 
@@ -98,7 +105,7 @@ def generate_planning_pdf(semaine: Semaine) -> tuple[bytes, str]:
         for s in seances_salle:
             matrice[s.creneau][s.jour] = s
 
-        # Construit les "lignes" du template (une ligne = un créneau)
+        # Construit les "lignes" du template (4 cours + 3 pauses intercalées)
         lignes = []
         for creneau_idx in range(4):
             deb, fin = HORAIRES_CRENEAUX[creneau_idx]
@@ -107,9 +114,17 @@ def generate_planning_pdf(semaine: Semaine) -> tuple[bytes, str]:
                 s = matrice[creneau_idx][jour_idx]
                 jours_cells.append(_construire_cellule(s) if s else None)
             lignes.append({
+                'type':    'cours',
                 'horaire': _humaniser_horaire(deb, fin),
                 'jours':   jours_cells,
             })
+            if creneau_idx < 3:
+                pd, pf = _PAUSES[creneau_idx]
+                lignes.append({
+                    'type':    'pause',
+                    'horaire': _humaniser_horaire(pd, pf),
+                    'jours':   [None] * 6,
+                })
 
         salles_pleines.append({
             'salle':  salle,
