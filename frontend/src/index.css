@@ -2,18 +2,258 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  background-color: #0A0A0A;
-  color: #F4F4F4;
-  -webkit-font-smoothing: antialiased;
+/* ─────────────────────────────────────────────────────────────────────
+   ChronoFS — feuille de style globale
+   Direction : "Academic Press" — sobriété éditoriale, navy FS-UEB plat,
+   accents dorés ponctuels, typographie sérieuse (Cormorant Garamond
+   pour les titres, Plus Jakarta Sans pour le corps, JetBrains Mono
+   pour les chiffres et codes). Pas de gradient, pas de glassmorphism.
+   ───────────────────────────────────────────────────────────────────── */
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background-color: #FAFAF7;
+    color: #1F2937;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-feature-settings: 'ss01', 'cv11', 'kern';
+  }
+  html.dark body {
+    background-color: #0A0F1F;
+    color: #E5E5DE;
+  }
+  ::selection {
+    background-color: rgba(166, 126, 46, 0.22);
+    color: #1A3568;
+  }
+  html.dark ::selection {
+    background-color: rgba(201, 162, 39, 0.25);
+    color: #F5F4EE;
+  }
+  /* Numerals tabulaires pour les KPI et tableaux par défaut */
+  table, .tabular {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
+/* Scrollbar discrète */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #C9A84C40 #1A1A1A;
+  scrollbar-color: #C9C5B6 transparent;
 }
-::-webkit-scrollbar        { width: 5px; height: 5px; }
-::-webkit-scrollbar-track  { background: #1A1A1A; }
-::-webkit-scrollbar-thumb  { background: #C9A84C40; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #C9A84C; }
+html.dark * { scrollbar-color: #2A3651 transparent; }
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #C9C5B6; border-radius: 6px; }
+html.dark ::-webkit-scrollbar-thumb { background: #2A3651; }
+::-webkit-scrollbar-thumb:hover { background: #8E97A4; }
+html.dark ::-webkit-scrollbar-thumb:hover { background: #3D4A6B; }
+
+@layer components {
+  /* — Skeleton — */
+  .skeleton {
+    background: linear-gradient(90deg, #EFEFE9 0%, #E1E1DA 50%, #EFEFE9 100%);
+    background-size: 1000px 100%;
+    animation: shimmer 1.8s linear infinite;
+    border-radius: 4px;
+  }
+  html.dark .skeleton {
+    background: linear-gradient(90deg, #18223A 0%, #243153 50%, #18223A 100%);
+    background-size: 1000px 100%;
+  }
+
+  /* — Sidebar scrollbar — */
+  .sidebar-scroll::-webkit-scrollbar       { width: 3px; }
+  .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+  .sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 2px; }
+
+  /* — Typographie de titres éditoriale —
+     Utilisée pour les h1 de PageShell : caractère, tracking serré, italique
+     pour le contraste avec le sans-serif du corps. */
+  .heading-display {
+    font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+  }
+  .heading-display em {
+    font-style: italic;
+    font-weight: 500;
+  }
+
+  /* — Eyebrow : petit label uppercase au-dessus d'un titre — */
+  .eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #5B6573;
+  }
+  html.dark .eyebrow { color: #A1A6B0; }
+
+  /* — Règle ornée : ligne fine avec un petit dingbat or au milieu —
+     <div class="rule-ornate"></div> */
+  .rule-ornate {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .rule-ornate::before,
+  .rule-ornate::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #C9C5B6;
+  }
+  html.dark .rule-ornate::before,
+  html.dark .rule-ornate::after {
+    background: #2A3651;
+  }
+  .rule-ornate > span {
+    color: #A67E2E;
+    font-size: 9px;
+    letter-spacing: 0.4em;
+  }
+
+  /* — Pulse dot (indicateur statut vivant) — */
+  .pulse-dot {
+    position: relative;
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+  }
+  .pulse-dot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: inherit;
+    animation: dot-pulse 1.8s ease-in-out infinite;
+    opacity: 0.5;
+  }
+
+  /* — Row reveal : barre verticale or qui apparaît à gauche au hover —
+     Utilisée dans les tables. */
+  .row-rule {
+    position: relative;
+    transition: background-color 0.15s ease;
+  }
+  .row-rule::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12%;
+    bottom: 12%;
+    width: 2px;
+    background: #A67E2E;
+    border-radius: 0 2px 2px 0;
+    transform: scaleY(0);
+    transform-origin: center;
+    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  html.dark .row-rule::before { background: #C9A227; }
+  .row-rule:hover::before { transform: scaleY(1); }
+
+  /* — Sidebar item active marker : barre or à gauche — */
+  .nav-active-marker {
+    position: absolute;
+    left: 0;
+    top: 25%;
+    bottom: 25%;
+    width: 2px;
+    background: #C9A227;
+    border-radius: 0 2px 2px 0;
+  }
+
+  /* — Chiffres en mode "monnaie" : mono, tabular —
+     <span class="num">123</span> */
+  .num {
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum', 'zero';
+  }
+
+  /* — Code UE : petit cartouche typographié — */
+  .code-ue {
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    font-size: 0.78rem;
+  }
+
+  /* — Champ de formulaire standard — dark-aware automatique — */
+  .input-field {
+    @apply w-full bg-white border border-line rounded-md px-3.5 py-2.5 text-sm text-ink-strong;
+    @apply focus:outline-none focus:border-primary-700 focus:ring-2 focus:ring-primary-500/15 transition-all;
+    @apply placeholder:text-ink-subtle/70;
+  }
+  html.dark .input-field {
+    background-color: #1A2235;
+    border-color: #1F2A40;
+    color: #F5F4EE;
+  }
+  html.dark .input-field::placeholder { color: #6F7787; }
+  html.dark .input-field:focus {
+    border-color: #C9A227;
+    box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.18);
+  }
+
+  /* — Pilules colorées (badges contextuels) — dark-aware automatique — */
+  .pill { @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] border font-semibold leading-snug; }
+  .pill-primary  { @apply bg-primary-50 text-primary-800 border-primary-200; }
+  .pill-accent   { @apply bg-gold-100 text-gold-700 border-gold-200; }
+  .pill-success  { @apply bg-success/10 text-success border-success/25; }
+  .pill-warning  { @apply bg-warning/10 text-warning border-warning/25; }
+  .pill-danger   { @apply bg-danger/10 text-danger border-danger/25; }
+  .pill-neutral  { @apply bg-surface-alt text-ink-muted border-line; }
+
+  html.dark .pill-primary {
+    background-color: rgba(30,58,138,0.30);
+    color: #B3C6E2;
+    border-color: rgba(133,162,204,0.30);
+  }
+  html.dark .pill-accent {
+    background-color: rgba(201,162,39,0.18);
+    color: #DBBC5E;
+    border-color: rgba(201,162,39,0.35);
+  }
+  html.dark .pill-success {
+    background-color: rgba(15,107,69,0.20);
+    color: #34D399;
+    border-color: rgba(52,211,153,0.30);
+  }
+  html.dark .pill-warning {
+    background-color: rgba(180,83,9,0.20);
+    color: #F59E0B;
+    border-color: rgba(245,158,11,0.30);
+  }
+  html.dark .pill-danger {
+    background-color: rgba(185,28,28,0.20);
+    color: #FCA5A5;
+    border-color: rgba(252,165,165,0.30);
+  }
+  html.dark .pill-neutral {
+    background-color: rgba(255,255,255,0.04);
+    color: #A1A6B0;
+    border-color: #1F2A40;
+  }
+}
+
+@layer utilities {
+  /* Fond papier subtil — petites lignes verticales très douces, pas un mesh */
+  .bg-paper {
+    background-color: #FAFAF7;
+    background-image:
+      linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 60%);
+  }
+  html.dark .bg-paper {
+    background-color: #0A0F1F;
+    background-image:
+      linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 60%);
+  }
+}

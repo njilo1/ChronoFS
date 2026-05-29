@@ -16,15 +16,26 @@ Contraintes DURES (jamais violées) :
     H2  ∀(s, j, c) :     Σ_(d ∈ D(j,c)) x[d, s] ≤ 1      (1 cours par salle/créneau)
     H3  ∀(e, j, c) :     Σ_(d ∈ D(e,j,c)) Σ_s x[d, s] ≤ 1 (1 cours par prof/créneau)
     H4  ∀(f, j, c) :     Σ_(d ∈ D(f,j,c)) Σ_s x[d, s] ≤ 1 (1 cours par classe/créneau)
-    H5  ∀(d, s) : x[d,s] = 0  si capacité_s < effectif_d   (sauf TERRAIN illimité)
+    H5  ∀(d, s) : x[d,s] = 0  si capacité_s × (1+TOL) < effectif_d
+                  (forçage toléré jusqu'à +40 %, sauf TERRAIN illimité)
     H6  ∀(d, s) : x[d,s] = 0  si type_salle non compatible avec type_cours
     H7  ∀(d, s) : x[d,s] = 0  si ville_filière(d) ≠ ville_campus(s)
-    H8  buffer inter-villes — pour chaque paire (d_a, d_b) avec même prof,
-        même jour, |créneau_a − créneau_b| ≤ 1, villes différentes :
-            placée(d_a) + placée(d_b) ≤ 1
+    H7bis ∀(d,s): x[d,s] = 0  si la filière épingle un campus ≠ campus_s
+    H8  Un enseignant n'enseigne que dans UNE seule ville par jour
+        (interdit tout aller-retour inter-villes le même jour, quel que
+        soit l'écart de créneaux).
+    H9  Une filière (= une classe, ex. TIC L3) est placée dans UN SEUL
+        campus pour toute la semaine : pas de saut de campus entre deux
+        créneaux, même au sein de la même ville.
 
-Objectif : max Σ_d (placée(d) × effectif_d).
-Les filières à gros effectif sont prioritaires si on doit en sacrifier.
+Objectif (lexicographique, encodé par poids w1 ≫ w2 ≫ w3 ≫ w4) :
+    1. Maximiser le NOMBRE de cours placés → « tous les cours de la
+       semaine doivent être faits ».
+    2. Priorité aux VACATAIRES (leurs cours passent avant les permanents).
+    3. Équité entre filières : à nombre de cours égal, sacrifier d'abord
+       les filières les plus programmées pour caser les autres.
+    4. Ajuster capacité ≈ effectif : minimiser le gaspillage de places et
+       n'utiliser le forçage (sur-effectif) qu'en dernier recours.
 
 L'algorithme renvoie pour chaque demande non placée la liste des raisons
 plausibles, en langage clair — JAMAIS « infeasible » brut au DAR.
@@ -40,9 +51,9 @@ from typing import Optional
 from ortools.sat.python import cp_model
 
 from core.constants import (
-    HORAIRES_CRENEAUX,
-    Jour,
     SALLES_AUTORISEES_PAR_TYPE_COURS,
+    StatutEnseignant,
+    TOLERANCE_SURCAPACITE,
     TypeSalle,
 )
 from core.models import DemandeCours, Salle
@@ -51,6 +62,12 @@ from core.models import DemandeCours, Salle
 # ── Capacité considérée comme infinie ────────────────────────────────────────
 # Les terrains acceptent n'importe quelle classe (sport, activités spéciales).
 CAPACITE_ILLIMITEE_TYPES = {TypeSalle.TERRAIN}
+
+# Pénalité appliquée au forçage (effectif > capacité réelle). Supérieure à 1
+# pour que, à choix égal, le solver préfère gaspiller quelques places plutôt
+# que de surcharger une salle. Le forçage reste possible (H5 tolérant) mais
+# l'objectif le réserve aux cas où aucune salle adéquate n'est libre.
+FACTEUR_SURCHARGE = 3
 
 
 @dataclass
@@ -117,15 +134,29 @@ class PlanningSolver:
         # candidates (économise des milliers de vars sur un gros référentiel).
         self.x: dict[tuple[int, int], cp_model.IntVar] = {}
 
-        # placee[d_idx] = somme bornée à 1 → réutilisée pour H3/H4/H8 et objectif.
+        # placee[d_idx] = somme bornée à 1 → réutilisée pour H3/H4 et objectif.
         self.placee: dict[int, cp_model.LinearExpr] = {}
+
+    # ── Helpers ──────────────────────────────────────────────────────────────
+    @staticmethod
+    def _effectif(d: DemandeCours) -> int:
+        """Effectif retenu pour une demande (déclaré > filière > 1)."""
+        return max(1, d.effectif_declare or d.filiere.effectif or 1)
+
+    @staticmethod
+    def _est_vacataire(d: DemandeCours) -> bool:
+        return bool(d.enseignant and d.enseignant.statut == StatutEnseignant.VACATAIRE)
 
     # ── Étape 1 : pré-filtrer les salles candidates par demande ─────────────
     def _calculer_candidates(self):
         for d_idx, d in enumerate(self.demandes):
             ville_demande = d.filiere.ville
             types_autorises = SALLES_AUTORISEES_PAR_TYPE_COURS.get(d.type_cours, [])
-            effectif = max(1, d.effectif_declare or d.filiere.effectif or 1)
+            effectif = self._effectif(d)
+
+            # H7bis — campus imposé (surcharge optionnelle de la ville).
+            campus_force = d.filiere.get_campus_contraint()
+            campus_force_id = campus_force.id if campus_force else None
 
             candidates: list[int] = []
             raisons: set[str] = set()
@@ -138,20 +169,39 @@ class PlanningSolver:
                 if s.campus.ville != ville_demande:
                     continue
 
+                # H7bis — Campus imposé : si la filière épingle un campus,
+                # on rejette toute salle d'un autre campus (même ville).
+                if campus_force_id is not None and s.campus_id != campus_force_id:
+                    continue
+
                 # H6 — Type de salle compatible
                 if s.type_salle not in types_autorises:
                     continue
 
-                # H5 — Capacité (sauf TERRAIN qui est illimité)
+                # H5 — Capacité avec tolérance de sur-effectif (sauf TERRAIN).
+                # Une salle de 50 places accepte jusqu'à 50×1.40 = 70 étudiants.
                 if s.type_salle not in CAPACITE_ILLIMITEE_TYPES:
-                    if s.capacite < effectif:
+                    capacite_max = s.capacite * (1 + TOLERANCE_SURCAPACITE)
+                    if capacite_max < effectif:
                         continue
 
                 candidates.append(s_idx)
 
             if not candidates:
                 # Diagnostic pour le rapport
-                if not any(s.campus.ville == ville_demande for s in self.salles):
+                if campus_force_id is not None and not any(
+                    s.campus_id == campus_force_id for s in self.salles
+                ):
+                    raisons.add(
+                        f"Le campus imposé « {campus_force.nom} » n'a aucune salle disponible."
+                    )
+                elif campus_force_id is not None:
+                    raisons.add(
+                        f"Aucune salle du campus imposé « {campus_force.nom} » n'accepte "
+                        f"ce type de cours ({d.type_cours}) avec un effectif de "
+                        f"{effectif} personnes."
+                    )
+                elif not any(s.campus.ville == ville_demande for s in self.salles):
                     raisons.add(f"Aucune salle disponible à {ville_demande}.")
                 else:
                     raisons.add(
@@ -181,7 +231,6 @@ class PlanningSolver:
                 self.placee[d_idx] = 0
 
         # ── H2 : ≤ 1 cours par (salle, jour, créneau) ────────────────────────
-        # Groupement des demandes par (salle, jour, créneau)
         salle_creneau_vars: dict[tuple[int, int, int], list[cp_model.IntVar]] = defaultdict(list)
         for (d_idx, s_idx), var in self.x.items():
             d = self.demandes[d_idx]
@@ -191,7 +240,6 @@ class PlanningSolver:
                 self.model.Add(sum(vars_groupe) <= 1)
 
         # ── H3 : ≤ 1 cours par (enseignant, jour, créneau) ───────────────────
-        # On somme les placee[d_idx] des demandes du même prof au même créneau
         enseignant_creneau: dict[tuple[int, int, int], list[int]] = defaultdict(list)
         for d_idx, d in enumerate(self.demandes):
             if d.enseignant_id is not None:
@@ -208,35 +256,113 @@ class PlanningSolver:
             if len(d_indices) > 1:
                 self.model.Add(sum(self.placee[i] for i in d_indices) <= 1)
 
-        # ── H8 : buffer inter-villes (≥ 1 créneau d'écart) ───────────────────
-        # Pour chaque paire (a, b) d'un même prof, même jour, |c_a − c_b| ≤ 1,
-        # villes différentes → max 1 des deux peut être placé.
-        # On groupe d'abord par (enseignant_id, jour) pour réduire la
-        # combinatoire (sinon O(N²) global).
-        ens_jour: dict[tuple[int, int], list[int]] = defaultdict(list)
-        for d_idx, d in enumerate(self.demandes):
+        # ── H8 : un enseignant n'enseigne que dans UNE ville par jour ────────
+        # Indicateurs bv[(prof, jour, ville)] : levés si le prof a un cours
+        # dans cette ville ce jour-là. On borne leur somme à 1 par (prof, jour),
+        # ce qui interdit tout aller-retour Ébolowa↔Monatélé dans la journée.
+        ej_villes: dict[tuple[int, int], set[str]] = defaultdict(set)
+        for (d_idx, s_idx) in self.x:
+            d = self.demandes[d_idx]
             if d.enseignant_id is not None:
-                ens_jour[(d.enseignant_id, d.jour)].append(d_idx)
-        for indices in ens_jour.values():
-            if len(indices) < 2:
-                continue
-            for i in range(len(indices)):
-                for j in range(i + 1, len(indices)):
-                    a_idx, b_idx = indices[i], indices[j]
-                    a, b = self.demandes[a_idx], self.demandes[b_idx]
-                    if abs(a.creneau - b.creneau) > 1:
-                        continue
-                    if a.filiere.ville == b.filiere.ville:
-                        continue  # H3 couvre déjà |c|==0, H2 OK sinon
-                    # Conflit inter-ville : sacrifice obligatoire d'un des deux
-                    self.model.Add(self.placee[a_idx] + self.placee[b_idx] <= 1)
+                ej_villes[(d.enseignant_id, d.jour)].add(self.salles[s_idx].campus.ville)
 
-        # ── Objectif : maximiser Σ placée(d) × effectif_d ────────────────────
-        objectif = []
+        bv: dict[tuple[int, int, str], cp_model.IntVar] = {}
+        for (e_id, jour), villes in ej_villes.items():
+            if len(villes) <= 1:
+                continue  # un seul choix de ville → aucune contrainte utile
+            for v in villes:
+                bv[(e_id, jour, v)] = self.model.NewBoolVar(f'bv_e{e_id}_j{jour}_{v}')
+            self.model.Add(sum(bv[(e_id, jour, v)] for v in villes) <= 1)
+
+        for (d_idx, s_idx), var in self.x.items():
+            d = self.demandes[d_idx]
+            if d.enseignant_id is None:
+                continue
+            key = (d.enseignant_id, d.jour, self.salles[s_idx].campus.ville)
+            if key in bv:
+                self.model.Add(var <= bv[key])
+
+        # ── H9 : une filière sur UN SEUL campus pour toute la semaine ────────
+        # Indicateurs bc[(filiere, campus)] : levés si la classe est placée
+        # dans ce campus. Somme bornée à 1 par filière → pas de saut de campus.
+        fil_campus: dict[int, set[int]] = defaultdict(set)
+        for (d_idx, s_idx) in self.x:
+            f_id = self.demandes[d_idx].filiere_id
+            fil_campus[f_id].add(self.salles[s_idx].campus_id)
+
+        bc: dict[tuple[int, int], cp_model.IntVar] = {}
+        for f_id, campus_ids in fil_campus.items():
+            if len(campus_ids) <= 1:
+                continue  # un seul campus possible → contrainte sans objet
+            for c_id in campus_ids:
+                bc[(f_id, c_id)] = self.model.NewBoolVar(f'bc_f{f_id}_c{c_id}')
+            self.model.Add(sum(bc[(f_id, c_id)] for c_id in campus_ids) <= 1)
+
+        for (d_idx, s_idx), var in self.x.items():
+            f_id = self.demandes[d_idx].filiere_id
+            c_id = self.salles[s_idx].campus_id
+            if (f_id, c_id) in bc:
+                self.model.Add(var <= bc[(f_id, c_id)])
+
+        # ── Objectif lexicographique ─────────────────────────────────────────
+        self._construire_objectif()
+
+    # ── Objectif (poids hiérarchiques) ──────────────────────────────────────
+    def _construire_objectif(self):
+        n = len(self.demandes)
+        if n == 0:
+            return
+
+        cap_max = max((s.capacite for s in self.salles), default=1)
+        eff_max = max((self._effectif(d) for d in self.demandes), default=1)
+
+        # Nombre de demandes par filière → équité (les filières les plus
+        # gourmandes sont sacrifiées en premier à nombre de cours égal).
+        nb_dem_fil: dict[int, int] = defaultdict(int)
+        for d in self.demandes:
+            nb_dem_fil[d.filiere_id] += 1
+        max_dem = max(nb_dem_fil.values(), default=1)
+
+        # Bornes des termes de bas niveau, pour caler des poids garantissant
+        # un ordre LEXICOGRAPHIQUE strict (un cours placé en plus prime
+        # toujours sur n'importe quel gain de niveau inférieur).
+        cap_borne = FACTEUR_SURCHARGE * (cap_max + eff_max) + 1   # mismatch max / placement
+        total4 = n * cap_borne                                    # capacité (w4 = 1)
+        w4 = 1
+        w3 = total4 + 1                                           # équité
+        total3 = (n * max_dem) * w3
+        w2 = total3 + total4 + 1                                  # vacataires
+        total2 = n * w2
+        w1 = total2 + total3 + total4 + 1                        # nombre de cours
+
+        termes = []
         for d_idx, d in enumerate(self.demandes):
-            effectif = max(1, d.effectif_declare or d.filiere.effectif or 1)
-            objectif.append(self.placee[d_idx] * effectif)
-        self.model.Maximize(sum(objectif))
+            placee = self.placee[d_idx]
+            # 1. Nombre de cours placés (priorité maximale)
+            termes.append(w1 * placee)
+            # 2. Priorité vacataires
+            if self._est_vacataire(d):
+                termes.append(w2 * placee)
+            # 3. Équité : bonus d'autant plus fort que la filière est PEU
+            #    programmée (max_dem − nb_demandes_filiere).
+            bonus_equite = max_dem - nb_dem_fil[d.filiere_id]
+            if bonus_equite > 0:
+                termes.append((w3 * bonus_equite) * placee)
+
+        # 4. Capacité ≈ effectif : pénalité (gaspillage ou surcharge) à minimiser.
+        for (d_idx, s_idx), var in self.x.items():
+            effectif = self._effectif(self.demandes[d_idx])
+            capacite = self.salles[s_idx].capacite
+            if self.salles[s_idx].type_salle in CAPACITE_ILLIMITEE_TYPES:
+                cout = 0
+            elif capacite >= effectif:
+                cout = capacite - effectif                       # gaspillage de places
+            else:
+                cout = (effectif - capacite) * FACTEUR_SURCHARGE  # forçage = pénalisé
+            if cout:
+                termes.append(-(w4 * cout) * var)
+
+        self.model.Maximize(sum(termes))
 
     # ── Étape 3 : lancer la résolution ──────────────────────────────────────
     def solve(self, time_limit_sec: float = 30.0) -> ResultatPlanification:

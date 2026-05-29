@@ -6,14 +6,19 @@ Vues pour les Seance (résultat du solver).
                   réservé au DAR avec audit.
 - Action `@seances` sur SemaineViewSet pour récupérer les séances
   d'une semaine directement.
+- PlanningActuelView : raccourci /api/planning-actuel/ qui renvoie le
+                  planning de la semaine la plus récente publiée (ou
+                  générée à défaut), filtré au département du chef.
 """
 
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from core.constants import Role
-from core.models import Seance
-from core.serializers import SeanceEditSerializer, SeanceSerializer
+from core.constants import Role, StatutSemaine
+from core.models import Seance, Semaine
+from core.serializers import SeanceEditSerializer, SeanceSerializer, SemaineSerializer
 
 
 class SeanceViewSet(viewsets.ModelViewSet):
@@ -54,3 +59,64 @@ class SeanceViewSet(viewsets.ModelViewSet):
             from core.permissions import IsDAR
             return [IsDAR()]
         return [IsAuthenticated()]
+
+
+class PlanningActuelView(APIView):
+    """
+    GET /api/planning-actuel/
+
+    Renvoie le planning "en vigueur" pour l'utilisateur connecté :
+      - la semaine la plus récente en statut PUBLIE (la version officielle
+        que les étudiants consultent) ;
+      - à défaut, la plus récente en statut GENERE (déjà calculée mais pas
+        encore publiée par le DAR).
+
+    Pour un chef de département, les séances sont automatiquement filtrées
+    sur son département. Pour le DAR, toutes les séances de la semaine
+    sont retournées.
+
+    Réponse :
+        {
+          "semaine": { ... } | null,
+          "seances": [ ... ]
+        }
+
+    Si aucune semaine PUBLIE ou GENERE n'existe, semaine=None et la
+    liste de séances est vide — le frontend affichera un état "rien à
+    voir".
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        semaine = (
+            Semaine.objects
+            .filter(statut__in=(StatutSemaine.PUBLIE, StatutSemaine.GENERE))
+            .select_related('annee_academique')
+            # PUBLIE prioritaire sur GENERE, puis la plus récente.
+            .extra(select={'rang_statut': (
+                "CASE statut WHEN 'PUBLIE' THEN 0 WHEN 'GENERE' THEN 1 ELSE 2 END"
+            )})
+            .order_by('rang_statut', '-date_debut')
+            .first()
+        )
+
+        if semaine is None:
+            return Response({'semaine': None, 'seances': []})
+
+        seances_qs = (
+            Seance.objects
+            .filter(semaine=semaine)
+            .select_related('filiere', 'ue', 'enseignant', 'salle__campus')
+            .order_by('jour', 'creneau', 'salle__nom')
+        )
+        # Le chef ne voit que les séances de SES filières.
+        if request.user.role == Role.CHEF_DEPT:
+            seances_qs = seances_qs.filter(
+                filiere__departement_id=request.user.departement_id,
+            )
+
+        return Response({
+            'semaine': SemaineSerializer(semaine).data,
+            'seances': SeanceSerializer(seances_qs, many=True).data,
+        })

@@ -3,21 +3,28 @@ import useAuthStore from './store/authStore';
 import Layout from './components/layout/Layout';
 import Login from './pages/Login';
 
-import DarDashboard    from './pages/dar/Dashboard';
-import DarSemaines     from './pages/dar/Semaines';
-import DarPlanning     from './pages/dar/Planning';
-import DarImports      from './pages/dar/Imports';
-import Campus          from './pages/dar/referentiel/Campus';
-import Salles          from './pages/dar/referentiel/Salles';
-import Departements    from './pages/dar/referentiel/Departements';
-import Filieres        from './pages/dar/referentiel/Filieres';
-import Enseignants     from './pages/dar/referentiel/Enseignants';
-import UEs             from './pages/dar/referentiel/UEs';
+import DarDashboard       from './pages/dar/Dashboard';
+import DarSemaines        from './pages/dar/Semaines';
+import DarPlanning        from './pages/dar/Planning';
+import DarImports         from './pages/dar/Imports';
+import DarChefs           from './pages/dar/Chefs';
+import DarArchives        from './pages/dar/Archives';
+import Campus             from './pages/dar/referentiel/Campus';
+import Salles             from './pages/dar/referentiel/Salles';
+import Departements       from './pages/dar/referentiel/Departements';
+import Filieres           from './pages/dar/referentiel/Filieres';
+import Enseignants        from './pages/dar/referentiel/Enseignants';
+import UEs                from './pages/dar/referentiel/UEs';
+import AnneesAcademiques  from './pages/dar/referentiel/AnneesAcademiques';
 
-import ChefDashboard   from './pages/chef-dept/Dashboard';
-import ChefImport      from './pages/chef-dept/mon-departement/Import';
-import ChefUEs         from './pages/chef-dept/mon-departement/UEs';
-import ChefEnseignants from './pages/chef-dept/mon-departement/Enseignants';
+import ChefDashboard      from './pages/chef-dept/Dashboard';
+import ChefImport         from './pages/chef-dept/mon-departement/Import';
+import ChefUEs            from './pages/chef-dept/mon-departement/UEs';
+import ChefEnseignants    from './pages/chef-dept/mon-departement/Enseignants';
+import HistoriqueEnvois   from './pages/chef-dept/HistoriqueEnvois';
+import ConsulterPlanning  from './pages/chef-dept/ConsulterPlanning';
+
+import Offline            from './pages/Offline';
 
 function Protected({ children, role: required }) {
   const { token, role } = useAuthStore();
@@ -52,7 +59,10 @@ export default function App() {
           <Route path="referentiel/departements"   element={<Departements />} />
           <Route path="referentiel/filieres"       element={<Filieres />} />
           <Route path="referentiel/enseignants"    element={<Enseignants />} />
-          <Route path="referentiel/ues"            element={<UEs />} />
+          <Route path="referentiel/ues"                        element={<UEs />} />
+          <Route path="referentiel/annees-academiques"         element={<AnneesAcademiques />} />
+          <Route path="chefs"                                  element={<DarChefs />} />
+          <Route path="archives"                               element={<DarArchives />} />
         </Route>
 
         {/* Chef Dept */}
@@ -60,9 +70,12 @@ export default function App() {
           <Route index               element={<ChefDashboard />} />
           <Route path="import"       element={<ChefImport />} />
           <Route path="ues"          element={<ChefUEs />} />
-          <Route path="enseignants"  element={<ChefEnseignants />} />
+          <Route path="enseignants"        element={<ChefEnseignants />} />
+          <Route path="historique-envois"  element={<HistoriqueEnvois />} />
+          <Route path="planning"           element={<ConsulterPlanning />} />
         </Route>
 
+        <Route path="/offline" element={<Offline />} />
         <Route path="*" element={<RoleRedirect />} />
       </Routes>
     </BrowserRouter>

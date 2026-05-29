@@ -68,7 +68,7 @@ def _humaniser_horaire(deb: str, fin: str) -> str:
 def _construire_cellule(s: Seance) -> dict:
     """Représentation cellule pour le template."""
     return {
-        'classe':     f'{s.filiere.nom} {s.filiere.niveau}',
+        'classe':     s.filiere.libelle_classe,
         'code_ue':    s.ue.code,
         'intitule':   s.ue.intitule,
         'enseignant': (
@@ -79,18 +79,24 @@ def _construire_cellule(s: Seance) -> dict:
 
 
 # ── Point d'entrée public ────────────────────────────────────────────────────
-def generate_planning_pdf(semaine: Semaine) -> tuple[bytes, str]:
+def generate_planning_pdf(semaine: Semaine, departement=None) -> tuple[bytes, str]:
     """
     Rend le PDF officiel pour la semaine et le renvoie en bytes.
 
+    Si `departement` est fourni, ne conserve que les séances des filières de
+    ce département (cas du chef qui télécharge le planning de SON département).
+
     Returns: (contenu_pdf_bytes, nom_fichier_suggere)
     """
-    # ── Charger toutes les séances de la semaine ────────────────────────────
-    seances = list(
+    # ── Charger les séances de la semaine (filtrées par dept si demandé) ─────
+    qs = (
         Seance.objects
         .filter(semaine=semaine)
         .select_related('filiere', 'ue', 'enseignant', 'salle__campus')
     )
+    if departement is not None:
+        qs = qs.filter(filiere__departement=departement)
+    seances = list(qs)
 
     # Regrouper par salle, calculer matrice jour × créneau
     salles_pleines: list[dict] = []
@@ -138,16 +144,17 @@ def generate_planning_pdf(semaine: Semaine) -> tuple[bytes, str]:
         'date_emission':   date.today(),
         'jours_libelles':  [j.label for j in Jour],
         'salles_pleines':  salles_pleines,
-        'logo_ueb_path':   f'file://{assets_dir / "logo_ueb.png"}',
-        'logo_fs_path':    f'file://{assets_dir / "logo_fs.png"}',
+        'logo_ueb_path':   f'file://{assets_dir / "logo_ueb_blanc.png"}',
+        'logo_fs_path':    f'file://{assets_dir / "logo_fs_blanc.png"}',
         'cachet_path':     f'file://{assets_dir / "cachet_doyen.png"}',
     }
 
     html_str = render_to_string('exports/planning_pdf.html', contexte)
     pdf_bytes = HTML(string=html_str, base_url=str(assets_dir)).write_pdf()
 
+    suffixe = f'_{departement.code}' if departement is not None else ''
     nom = (
-        f'Planning_FS-UEB_'
+        f'Planning_FS-UEB{suffixe}_'
         f'{semaine.date_debut:%Y-%m-%d}_au_{semaine.date_fin:%Y-%m-%d}.pdf'
     )
     return pdf_bytes, nom

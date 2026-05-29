@@ -57,11 +57,76 @@ class SeanceEditSerializer(serializers.ModelSerializer):
     """
     PATCH par le DAR pour modifier manuellement une séance après
     génération automatique. Audit obligatoire.
+
+    Validation explicite des contraintes UniqueConstraint (`(semaine,
+    salle, jour, creneau)` et `(semaine, filiere, jour, creneau)`) pour
+    renvoyer un 400 avec message lisible plutôt qu'une 500 IntegrityError
+    quand un drag-drop tombe sur une case déjà occupée.
     """
 
     class Meta:
         model  = Seance
-        fields = ('salle', 'enseignant', 'jour', 'creneau', 'type_cours')
+        fields = ('salle', 'enseignant', 'ue', 'jour', 'creneau', 'type_cours')
+
+    def validate(self, attrs):
+        instance = self.instance
+        # Valeurs effectives après PATCH (champ absent → on garde l'actuel).
+        salle      = attrs.get('salle',      instance.salle)
+        enseignant = attrs.get('enseignant', instance.enseignant)
+        ue         = attrs.get('ue',         instance.ue)
+        jour       = attrs.get('jour',       instance.jour)
+        creneau    = attrs.get('creneau',    instance.creneau)
+
+        # L'UE choisie doit appartenir à la filière de la séance (on remplace
+        # le cours par un autre cours de la même classe — jamais d'une autre).
+        if ue is not None and ue.filiere_id != instance.filiere_id:
+            raise serializers.ValidationError({'detail':
+                f"L'UE {ue.code} n'appartient pas à la filière {instance.filiere}. "
+                "Choisissez une UE de cette classe."
+            })
+
+        # H7 — la salle doit être dans la même ville que la filière.
+        if salle is not None and salle.campus.ville != instance.filiere.ville:
+            raise serializers.ValidationError({'detail':
+                f"La salle {salle.nom} est à {salle.campus.get_ville_display()}, "
+                f"mais {instance.filiere} est à {instance.filiere.get_ville_display()}. "
+                "Choisissez une salle de la même ville."
+            })
+
+        # H7bis — campus imposé éventuel de la filière.
+        campus_force = instance.filiere.get_campus_contraint()
+        if salle is not None and campus_force is not None and salle.campus_id != campus_force.id:
+            raise serializers.ValidationError({'detail':
+                f"{instance.filiere} doit se tenir au campus « {campus_force.nom} ». "
+                f"La salle {salle.nom} n'y appartient pas."
+            })
+
+        autres = Seance.objects.filter(semaine=instance.semaine).exclude(pk=instance.pk)
+
+        if autres.filter(salle=salle, jour=jour, creneau=creneau).exists():
+            raise serializers.ValidationError({'detail':
+                f"La salle {salle.nom} est déjà occupée le "
+                f"{Seance(jour=jour).get_jour_display()} "
+                f"{Seance(creneau=creneau).get_creneau_display()}."
+            })
+
+        if autres.filter(filiere=instance.filiere, jour=jour, creneau=creneau).exists():
+            raise serializers.ValidationError({'detail':
+                f"{instance.filiere} a déjà un cours le "
+                f"{Seance(jour=jour).get_jour_display()} "
+                f"{Seance(creneau=creneau).get_creneau_display()}."
+            })
+
+        if enseignant is not None and autres.filter(
+            enseignant=enseignant, jour=jour, creneau=creneau,
+        ).exists():
+            raise serializers.ValidationError({'detail':
+                f"{enseignant.get_grade_display()} {enseignant.nom} a déjà un cours "
+                f"le {Seance(jour=jour).get_jour_display()} "
+                f"{Seance(creneau=creneau).get_creneau_display()}."
+            })
+
+        return attrs
 
     def update(self, instance, validated_data):
         for k, v in validated_data.items():

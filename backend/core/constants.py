@@ -146,3 +146,20 @@ class Grade(models.TextChoices):
     M   = 'M',   'M'
     MME = 'MME', 'Mme'
     ING = 'ING', 'Ing'
+
+
+# ── Statut enseignant ────────────────────────────────────────────────────────
+# Les vacataires (intervenants extérieurs, disponibilité limitée) sont
+# PRIORITAIRES sur les permanents lors de la génération : on s'efforce de
+# placer leurs cours d'abord, car ils ont peu de marge pour se reprogrammer.
+class StatutEnseignant(models.TextChoices):
+    PERMANENT = 'PERMANENT', 'Permanent'
+    VACATAIRE = 'VACATAIRE', 'Vacataire'
+
+
+# ── Tolérance de sur-effectif (forçage de salle) ─────────────────────────────
+# Une salle peut accueillir jusqu'à capacite × (1 + TOLERANCE_SURCAPACITE)
+# étudiants quand aucune salle idéale n'est libre (ex. une salle de 50 places
+# peut monter à ~70). Le solver pénalise ce forçage pour ne l'utiliser qu'en
+# dernier recours (cf. objectif S « capacité ≈ effectif »).
+TOLERANCE_SURCAPACITE = 0.40

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 290" fill="none">
+  <!-- Carte principale -->
+  <rect width="420" height="290" rx="16" fill="white" fill-opacity="0.06"/>
+  <rect width="420" height="290" rx="16" stroke="white" stroke-opacity="0.12" stroke-width="1.2"/>
+
+  <!-- En-tête -->
+  <rect width="420" height="40" rx="14" fill="white" fill-opacity="0.1"/>
+  <rect y="26" width="420" height="14" fill="white" fill-opacity="0.04"/>
+
+  <!-- Texte Emploi du Temps -->
+  <text x="210" y="26" fill="white" fill-opacity="0.85" font-size="12" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" font-weight="700" letter-spacing="0.5">EMPLOI DU TEMPS</text>
+
+  <!-- Lignes verticales colonnes -->
+  <line x1="80"  y1="40" x2="80"  y2="290" stroke="white" stroke-opacity="0.1" stroke-width="1"/>
+  <line x1="148" y1="40" x2="148" y2="290" stroke="white" stroke-opacity="0.1" stroke-width="1"/>
+  <line x1="216" y1="40" x2="216" y2="290" stroke="white" stroke-opacity="0.1" stroke-width="1"/>
+  <line x1="284" y1="40" x2="284" y2="290" stroke="white" stroke-opacity="0.1" stroke-width="1"/>
+  <line x1="352" y1="40" x2="352" y2="290" stroke="white" stroke-opacity="0.1" stroke-width="1"/>
+
+  <!-- En-têtes jours -->
+  <text x="114" y="57" fill="white" fill-opacity="0.75" font-size="10" font-family="sans-serif" text-anchor="middle" font-weight="600">LUN</text>
+  <text x="182" y="57" fill="white" fill-opacity="0.75" font-size="10" font-family="sans-serif" text-anchor="middle" font-weight="600">MAR</text>
+  <text x="250" y="57" fill="white" fill-opacity="0.75" font-size="10" font-family="sans-serif" text-anchor="middle" font-weight="600">MER</text>
+  <text x="318" y="57" fill="white" fill-opacity="0.75" font-size="10" font-family="sans-serif" text-anchor="middle" font-weight="600">JEU</text>
+  <text x="386" y="57" fill="white" fill-opacity="0.75" font-size="10" font-family="sans-serif" text-anchor="middle" font-weight="600">VEN</text>
+
+  <!-- Lignes horizontales créneaux -->
+  <line x1="0" y1="62" x2="420" y2="62" stroke="white" stroke-opacity="0.1" stroke-width="1"/>
+  <line x1="0" y1="118" x2="420" y2="118" stroke="white" stroke-opacity="0.1" stroke-width="1"/>
+  <line x1="0" y1="174" x2="420" y2="174" stroke="white" stroke-opacity="0.1" stroke-width="1"/>
+  <line x1="0" y1="230" x2="420" y2="230" stroke="white" stroke-opacity="0.1" stroke-width="1"/>
+
+  <!-- Horaires -->
+  <text x="38" y="95"  fill="white" fill-opacity="0.5" font-size="9" font-family="sans-serif" text-anchor="middle">07h30</text>
+  <text x="38" y="151" fill="white" fill-opacity="0.5" font-size="9" font-family="sans-serif" text-anchor="middle">10h15</text>
+  <text x="38" y="207" fill="white" fill-opacity="0.5" font-size="9" font-family="sans-serif" text-anchor="middle">13h00</text>
+  <text x="38" y="263" fill="white" fill-opacity="0.5" font-size="9" font-family="sans-serif" text-anchor="middle">15h45</text>
+
+  <!-- ═══ Blocs cours ═══ -->
+
+  <!-- LUNDI 07h30 -->
+  <rect x="83" y="65" width="62" height="50" rx="5" fill="white" fill-opacity="0.18"/>
+  <text x="114" y="86" fill="white" fill-opacity="0.95" font-size="8.5" font-family="sans-serif" text-anchor="middle" font-weight="700">INF3101</text>
+  <text x="114" y="99" fill="white" fill-opacity="0.55" font-size="7.5" font-family="sans-serif" text-anchor="middle">Salle A</text>
+
+  <!-- MARDI 10h15 -->
+  <rect x="151" y="121" width="62" height="50" rx="5" fill="white" fill-opacity="0.18"/>
+  <text x="182" y="142" fill="white" fill-opacity="0.95" font-size="8.5" font-family="sans-serif" text-anchor="middle" font-weight="700">MAT2201</text>
+  <text x="182" y="155" fill="white" fill-opacity="0.55" font-size="7.5" font-family="sans-serif" text-anchor="middle">Amphi E</text>
+
+  <!-- MERCREDI 07h30 -->
+  <rect x="219" y="65" width="62" height="50" rx="5" fill="white" fill-opacity="0.18"/>
+  <text x="250" y="86" fill="white" fill-opacity="0.95" font-size="8.5" font-family="sans-serif" text-anchor="middle" font-weight="700">BCH1101</text>
+  <text x="250" y="99" fill="white" fill-opacity="0.55" font-size="7.5" font-family="sans-serif" text-anchor="middle">Salle B</text>
+
+  <!-- MERCREDI 13h00 -->
+  <rect x="219" y="177" width="62" height="50" rx="5" fill="#06B6D4" fill-opacity="0.25"/>
+  <text x="250" y="198" fill="white" fill-opacity="0.95" font-size="8.5" font-family="sans-serif" text-anchor="middle" font-weight="700">PHY2101</text>
+  <text x="250" y="211" fill="white" fill-opacity="0.55" font-size="7.5" font-family="sans-serif" text-anchor="middle">Labo TP</text>
+
+  <!-- LUNDI 13h00 — cyan -->
+  <rect x="83" y="177" width="62" height="50" rx="5" fill="#06B6D4" fill-opacity="0.2"/>
+  <text x="114" y="198" fill="white" fill-opacity="0.95" font-size="8.5" font-family="sans-serif" text-anchor="middle" font-weight="700">GEO1101</text>
+  <text x="114" y="211" fill="white" fill-opacity="0.55" font-size="7.5" font-family="sans-serif" text-anchor="middle">Salle G</text>
+
+  <!-- JEUDI 15h45 -->
+  <rect x="287" y="233" width="62" height="50" rx="5" fill="white" fill-opacity="0.18"/>
+  <text x="318" y="254" fill="white" fill-opacity="0.95" font-size="8.5" font-family="sans-serif" text-anchor="middle" font-weight="700">MAT2201</text>
+  <text x="318" y="267" fill="white" fill-opacity="0.55" font-size="7.5" font-family="sans-serif" text-anchor="middle">Salle N</text>
+
+  <!-- VENDREDI 10h15 -->
+  <rect x="355" y="121" width="62" height="50" rx="5" fill="white" fill-opacity="0.18"/>
+  <text x="386" y="142" fill="white" fill-opacity="0.95" font-size="8.5" font-family="sans-serif" text-anchor="middle" font-weight="700">INF3101</text>
+  <text x="386" y="155" fill="white" fill-opacity="0.55" font-size="7.5" font-family="sans-serif" text-anchor="middle">Salle M</text>
+
+  <!-- JEUDI 07h30 -->
+  <rect x="287" y="65" width="62" height="50" rx="5" fill="white" fill-opacity="0.13"/>
+  <text x="318" y="86" fill="white" fill-opacity="0.85" font-size="8.5" font-family="sans-serif" text-anchor="middle" font-weight="700">CHM2102</text>
+  <text x="318" y="99" fill="white" fill-opacity="0.45" font-size="7.5" font-family="sans-serif" text-anchor="middle">Salle D</text>
+
+  <!-- VENDREDI 13h00 -->
+  <rect x="355" y="177" width="62" height="50" rx="5" fill="white" fill-opacity="0.13"/>
+  <text x="386" y="198" fill="white" fill-opacity="0.85" font-size="8.5" font-family="sans-serif" text-anchor="middle" font-weight="700">INF3102</text>
+  <text x="386" y="211" fill="white" fill-opacity="0.45" font-size="7.5" font-family="sans-serif" text-anchor="middle">Salle A</text>
+</svg>

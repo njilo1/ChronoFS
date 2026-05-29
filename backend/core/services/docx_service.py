@@ -158,9 +158,13 @@ def generate_planning_docx(semaine: Semaine) -> tuple[bytes, str]:
     doc.add_paragraph()
     doyen = doc.add_paragraph()
     doyen.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    run = doyen.add_run('Le Doyen')
-    run.bold = True
-    run.font.size = Pt(11)
+    cachet_path = Path(settings.BASE_DIR) / 'core' / 'static' / 'exports' / 'cachet_doyen.png'
+    if cachet_path.exists():
+        doyen.add_run().add_picture(str(cachet_path), width=Cm(5))
+    else:
+        run = doyen.add_run('Le Doyen')
+        run.bold = True
+        run.font.size = Pt(11)
 
     # ── Sortie en bytes ─────────────────────────────────────────────────────
     buf = io.BytesIO()
@@ -240,7 +244,8 @@ def _ecrire_bloc_en(cell):
 
     ed = cell.add_paragraph()
     ed.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    er = ed.add_run(f'Ebolowa, le {date.today():%d/%m/%Y}')
+    from babel.dates import format_date
+    er = ed.add_run(f'Ebolowa, le {format_date(date.today(), format="d MMMM yyyy", locale="fr_FR")}')
     er.italic = True
     er.font.size = Pt(9)
 
@@ -285,7 +290,7 @@ def _construire_tableau(doc, seances_salle):
             if s is None:
                 continue
             p = cell.paragraphs[0]
-            r = p.add_run(f'{s.filiere.nom} {s.filiere.niveau}\n')
+            r = p.add_run(f'{s.filiere.libelle_classe}\n')
             r.bold = True; r.font.size = Pt(8)
             p.add_run(f'{s.ue.code}\n').font.size = Pt(8)
             p.add_run(f'{s.ue.intitule}\n').font.size = Pt(8)

@@ -44,7 +44,10 @@ def generer_planning(semaine: Semaine, time_limit_sec: float = 30.0) -> dict:
     demandes = list(
         DemandeCours.objects
         .filter(import_source__semaine=semaine)
-        .select_related('filiere__departement', 'ue', 'enseignant')
+        .select_related(
+            'filiere__departement', 'filiere__campus_obligatoire',
+            'ue', 'enseignant',
+        )
     )
 
     # ── 2. Charger les salles ────────────────────────────────────────────────

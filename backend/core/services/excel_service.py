@@ -30,6 +30,7 @@ from openpyxl.styles import (
     Protection,
     Side,
 )
+from openpyxl.formatting.rule import FormulaRule
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.worksheet import Worksheet
@@ -129,7 +130,7 @@ def generate_template_excel(departement: Departement, semaine: Optional[Semaine]
         .order_by('code')
     )
     enseignants = list(
-        Enseignant.objects.filter(departements=departement)
+        Enseignant.objects.filter(departements=departement, actif=True)
         .order_by('nom', 'grade')
     )
 
@@ -236,6 +237,27 @@ def _construire_onglet_planning(ws: Worksheet, ues: list[UE]):
 
     # Volets figés à partir de la ligne 3 (entête + exemple toujours visibles)
     ws.freeze_panes = 'A3'
+    _ajouter_formatage_doublons(ws)
+
+
+def _ajouter_formatage_doublons(ws: Worksheet, ligne_debut: int = 3, ligne_fin: int = 102):
+    """Surligne en rouge les lignes dupliquées (même classe + même jour + même horaire)."""
+    plage = f'A{ligne_debut}:I{ligne_fin}'
+    bd, bf = ligne_debut, ligne_fin
+    formule = (
+        f'AND($B{bd}<>"",$F{bd}<>"",$G{bd}<>"",'
+        f'SUMPRODUCT(($B${bd}:$B${bf}=$B{bd})*'
+        f'($F${bd}:$F${bf}=$F{bd})*'
+        f'($G${bd}:$G${bf}=$G{bd}))>1)'
+    )
+    ws.conditional_formatting.add(
+        plage,
+        FormulaRule(
+            formula=[formule],
+            fill=PatternFill(start_color='FECACA', end_color='FECACA', fill_type='solid'),
+            font=Font(color='991B1B', bold=True),
+        ),
+    )
 
 
 def _construire_onglet_instructions(ws: Worksheet, dept: Departement, semaine: Optional[Semaine]):

@@ -39,3 +39,5 @@ redis>=5.0,<6.0
 # ── Utilitaires ───────────────────────────────────────────────
 # Lecture des variables d'environnement depuis .env
 python-decouple>=3.8,<4.0
+# Localisation et formats de dates/nombres (utilisé pour les exports)
+Babel>=2.14,<3.0

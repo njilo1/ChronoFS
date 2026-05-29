@@ -25,7 +25,9 @@ from core.views import (
     LoginView,
     MeView,
     MesEnseignantsViewSet,
+    MesFilieresViewSet,
     MesUEsViewSet,
+    PlanningActuelView,
     RefreshView,
     SalleViewSet,
     SeanceViewSet,
@@ -54,6 +56,7 @@ router.register('seances',             SeanceViewSet,           basename='seance
 router_chef = DefaultRouter()
 router_chef.register('ues',          MesUEsViewSet,          basename='mes-ues')
 router_chef.register('enseignants',  MesEnseignantsViewSet,  basename='mes-enseignants')
+router_chef.register('filieres',     MesFilieresViewSet,     basename='mes-filieres')
 
 
 urlpatterns = [
@@ -68,6 +71,9 @@ urlpatterns = [
     # Imports — endpoints non-routables par DefaultRouter
     path('template-excel/',    TemplateExcelView.as_view(),  name='template-excel'),
     path('imports/preview/',   ImportPreviewView.as_view(),  name='imports-preview'),
+
+    # Planning en vigueur (semaine PUBLIE/GENERE la plus récente, filtré par dept du chef)
+    path('planning-actuel/',   PlanningActuelView.as_view(), name='planning-actuel'),
 
     # Router principal (référentiel DAR + semaines + chefs-departement + imports)
     path('', include(router.urls)),

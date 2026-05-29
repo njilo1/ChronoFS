@@ -28,6 +28,7 @@ from core.constants import (
     Niveau,
     Role,
     Semestre,
+    StatutEnseignant,
     StatutSemaine,
     TypeCours,
     TypeSalle,
@@ -86,8 +87,8 @@ class _SolverTestBase(TestCase):
         # UE de base
         cls.ue1 = UE.objects.create(code='TST101', intitule='UE Test 1', filiere=cls.fil_eb_l1)
 
-    def _enseignant(self, nom='DUPONT', grade=Grade.DR):
-        return Enseignant.objects.create(nom=nom, grade=grade)
+    def _enseignant(self, nom='DUPONT', grade=Grade.DR, statut=StatutEnseignant.PERMANENT):
+        return Enseignant.objects.create(nom=nom, grade=grade, statut=statut)
 
     def _import(self):
         """Crée un ImportPlanning fictif pour rattacher les DemandeCours."""
@@ -326,3 +327,199 @@ class SolverTests(_SolverTestBase):
         affectations = {p.demande_id: p.salle_id for p in result.placements}
         self.assertEqual(affectations[d_eb.id], salle_eb.id)
         self.assertEqual(affectations[d_mo.id], salle_mo.id)
+
+    # 10 ──────────────────────────────────────────────────────────────────────
+    def test_campus_obligatoire(self):
+        """
+        Filière épinglée à un campus précis (parmi 2 campus de la même ville)
+        → la séance est placée dans CE campus, jamais l'autre (H7bis).
+        """
+        campus_eb2 = Campus.objects.create(
+            nom='Campus Secondaire Test EB', ville=Ville.EBOLOWA,
+        )
+        salle_a = Salle.objects.create(
+            nom='A', campus=self.campus_eb, capacite=50, type_salle=TypeSalle.COURS,
+        )
+        salle_b = Salle.objects.create(
+            nom='B', campus=campus_eb2, capacite=50, type_salle=TypeSalle.COURS,
+        )
+        # Filière forcée sur le 2e campus d'Ébolowa
+        f = Filiere.objects.create(
+            code='TSTF', niveau=Niveau.L3, ville=Ville.EBOLOWA,
+            nom='TST Forcee L3', departement=self.dept, effectif=30,
+            campus_obligatoire=campus_eb2,
+        )
+        ue = UE.objects.create(code='TSTF301', intitule='UE Forcée', filiere=f)
+        imp = self._import()
+        d = self._demande(import_source=imp, filiere=f, ue=ue)
+
+        result = self._solve([d], [salle_a, salle_b])
+
+        self.assertEqual(len(result.placements), 1)
+        self.assertEqual(result.placements[0].salle_id, salle_b.id)
+
+    # 11 ──────────────────────────────────────────────────────────────────────
+    def test_campus_obligatoire_sans_salle_non_place(self):
+        """
+        Campus imposé sans aucune salle compatible → demande non placée,
+        avec une raison lisible mentionnant le campus.
+        """
+        campus_eb2 = Campus.objects.create(
+            nom='Campus Vide Test EB', ville=Ville.EBOLOWA,
+        )
+        # La seule salle disponible est dans l'AUTRE campus d'Ébolowa.
+        salle_a = Salle.objects.create(
+            nom='A', campus=self.campus_eb, capacite=50, type_salle=TypeSalle.COURS,
+        )
+        f = Filiere.objects.create(
+            code='TSTV', niveau=Niveau.L3, ville=Ville.EBOLOWA,
+            nom='TST Vide L3', departement=self.dept, effectif=30,
+            campus_obligatoire=campus_eb2,  # aucun salle sur ce campus
+        )
+        ue = UE.objects.create(code='TSTV301', intitule='UE Vide', filiere=f)
+        imp = self._import()
+        d = self._demande(import_source=imp, filiere=f, ue=ue)
+
+        result = self._solve([d], [salle_a])
+
+        self.assertEqual(len(result.placements), 0)
+        self.assertEqual(len(result.non_places), 1)
+        raisons = ' '.join(result.non_places[0].raisons).lower()
+        self.assertIn('campus', raisons)
+
+    # 12 ──────────────────────────────────────────────────────────────────────
+    def test_vacataire_prioritaire(self):
+        """
+        Deux cours en concurrence pour l'unique salle au même créneau :
+        celui dont l'enseignant est VACATAIRE est placé en priorité.
+        """
+        salle = Salle.objects.create(
+            nom='A', campus=self.campus_eb, capacite=50, type_salle=TypeSalle.COURS,
+        )
+        f_l2 = Filiere.objects.create(
+            code='TST', niveau=Niveau.L2, ville=Ville.EBOLOWA,
+            nom='TST L2', departement=self.dept, effectif=30,
+        )
+        ue2 = UE.objects.create(code='TST201', intitule='UE Test 2', filiere=f_l2)
+
+        permanent = self._enseignant(nom='PERMANENT', statut=StatutEnseignant.PERMANENT)
+        vacataire = self._enseignant(nom='VACATAIRE', statut=StatutEnseignant.VACATAIRE)
+        imp = self._import()
+        # Effectifs égaux → seul le statut départage.
+        d_perm = self._demande(import_source=imp, enseignant=permanent,
+                               creneau=Creneau.C0, effectif=30)
+        d_vac  = self._demande(import_source=imp, filiere=f_l2, ue=ue2, enseignant=vacataire,
+                               creneau=Creneau.C0, effectif=30)
+
+        result = self._solve([d_perm, d_vac], [salle])
+
+        self.assertEqual(len(result.placements), 1)
+        self.assertEqual(result.placements[0].demande_id, d_vac.id)
+
+    # 13 ──────────────────────────────────────────────────────────────────────
+    def test_filiere_un_seul_campus(self):
+        """
+        Filière SANS campus_obligatoire, 2 campus dans la même ville :
+        toutes ses séances de la semaine doivent tomber dans LE MÊME campus
+        (H9 — pas de saut de campus entre deux créneaux).
+        """
+        campus_eb2 = Campus.objects.create(nom='Campus Bis Test EB', ville=Ville.EBOLOWA)
+        salle_a = Salle.objects.create(
+            nom='A', campus=self.campus_eb, capacite=50, type_salle=TypeSalle.COURS,
+        )
+        salle_b = Salle.objects.create(
+            nom='B', campus=campus_eb2,     capacite=50, type_salle=TypeSalle.COURS,
+        )
+        imp = self._import()
+        d1 = self._demande(import_source=imp, creneau=Creneau.C0)
+        d2 = self._demande(import_source=imp, creneau=Creneau.C1)
+
+        result = self._solve([d1, d2], [salle_a, salle_b])
+
+        self.assertEqual(len(result.placements), 2)
+        salle_par_id = {Salle.objects.get(id=s.id).id: Salle.objects.get(id=s.id).campus_id
+                        for s in [salle_a, salle_b]}
+        campus_utilises = {salle_par_id[p.salle_id] for p in result.placements}
+        self.assertEqual(len(campus_utilises), 1, "La filière a sauté de campus.")
+
+    # 14 ──────────────────────────────────────────────────────────────────────
+    def test_enseignant_deux_villes_meme_jour(self):
+        """
+        Un prof avec un cours à Ébolowa ET un à Monatélé le MÊME jour, même
+        avec des créneaux espacés (C0 et C3) → un seul est plaçable (H8).
+        """
+        salle_eb = Salle.objects.create(
+            nom='A',  campus=self.campus_eb, capacite=50, type_salle=TypeSalle.COURS,
+        )
+        salle_mo = Salle.objects.create(
+            nom='AM', campus=self.campus_mo, capacite=50, type_salle=TypeSalle.COURS,
+        )
+        f_mo = Filiere.objects.create(
+            code='TST', niveau=Niveau.L1, ville=Ville.MONATELE,
+            nom='TST L1 MO', departement=self.dept, effectif=20,
+        )
+        ue_mo = UE.objects.create(code='TST101M', intitule='UE MO', filiere=f_mo)
+
+        prof = self._enseignant()
+        imp = self._import()
+        d_eb = self._demande(import_source=imp, enseignant=prof,
+                             jour=Jour.LUNDI, creneau=Creneau.C0)
+        d_mo = self._demande(import_source=imp, filiere=f_mo, ue=ue_mo, enseignant=prof,
+                             jour=Jour.LUNDI, creneau=Creneau.C3)
+
+        result = self._solve([d_eb, d_mo], [salle_eb, salle_mo])
+
+        self.assertEqual(len(result.placements), 1)
+        self.assertEqual(len(result.non_places), 1)
+
+    # 15 ──────────────────────────────────────────────────────────────────────
+    def test_surcapacite_toleree(self):
+        """
+        Forçage de salle : une salle de 50 places accepte un effectif de 65
+        (tolérance +40 % → 70), mais refuse 80.
+        """
+        salle = Salle.objects.create(
+            nom='A', campus=self.campus_eb, capacite=50, type_salle=TypeSalle.COURS,
+        )
+        imp = self._import()
+
+        d_ok = self._demande(import_source=imp, creneau=Creneau.C0, effectif=65)
+        self.assertEqual(len(self._solve([d_ok], [salle]).placements), 1)
+
+        d_trop = self._demande(import_source=imp, creneau=Creneau.C1, effectif=80)
+        res_trop = self._solve([d_trop], [salle])
+        self.assertEqual(len(res_trop.placements), 0)
+        self.assertEqual(len(res_trop.non_places), 1)
+
+    # 16 ──────────────────────────────────────────────────────────────────────
+    def test_equite_filiere_moins_programmee(self):
+        """
+        Équité : à nombre de cours égal, on sacrifie la filière la PLUS
+        programmée. La filière B (1 seul cours) est servie avant la filière A
+        (2 cours) quand elles se disputent l'unique salle à C0.
+        """
+        salle = Salle.objects.create(
+            nom='A', campus=self.campus_eb, capacite=50, type_salle=TypeSalle.COURS,
+        )
+        f_b = Filiere.objects.create(
+            code='TSTB', niveau=Niveau.L2, ville=Ville.EBOLOWA,
+            nom='TST B', departement=self.dept, effectif=30,
+        )
+        ue_b = UE.objects.create(code='TSTB201', intitule='UE B', filiere=f_b)
+
+        imp = self._import()
+        # Filière A (par défaut) : 2 cours (C0 et C1).
+        a_c0 = self._demande(import_source=imp, creneau=Creneau.C0, effectif=30)
+        a_c1 = self._demande(import_source=imp, creneau=Creneau.C1, effectif=30)
+        # Filière B : 1 seul cours, en concurrence avec A à C0.
+        b_c0 = self._demande(import_source=imp, filiere=f_b, ue=ue_b,
+                             creneau=Creneau.C0, effectif=30)
+
+        result = self._solve([a_c0, a_c1, b_c0], [salle])
+
+        # Nombre maximal de cours placés = 2 (la salle est libre à C0 et C1).
+        self.assertEqual(len(result.placements), 2)
+        places = {p.demande_id for p in result.placements}
+        self.assertIn(b_c0.id, places, "La filière la moins programmée doit passer.")
+        self.assertIn(a_c1.id, places)
+        self.assertNotIn(a_c0.id, places)

@@ -1,25 +1,43 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, MapPin } from 'lucide-react';
+
 import { useCrud } from '../../../hooks/useCrud';
+import { askConfirm } from '../../../store/confirmStore';
+import PageShell from '../../../components/ui/PageShell';
 import Table from '../../../components/ui/Table';
 import Button from '../../../components/ui/Button';
 import Modal from '../../../components/ui/Modal';
 
-const iCls = 'w-full bg-ebg border border-eborder rounded-lg px-3 py-2 text-sm text-etext focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 transition-all';
+const iCls = 'input-field';
 function F({ label, children }) {
-  return <div><label className="text-emuted text-xs mb-1 block">{label}</label>{children}</div>;
+  return (
+    <div>
+      <label className="text-[11px] font-bold text-ink-muted uppercase tracking-widest mb-1.5 block">{label}</label>
+      {children}
+    </div>
+  );
 }
 
 const BLANK = { nom: '', ville: 'EBOLOWA' };
+
 const COLS = [
-  { key: 'nom',   label: 'Nom' },
-  { key: 'ville', label: 'Ville', render: r => r.ville === 'EBOLOWA' ? 'Ébolowa' : 'Monatélé' },
+  { key: 'nom',   label: 'Nom du campus', render: r => (
+    <span className="flex items-center gap-2">
+      <span className="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0" />
+      {r.nom}
+    </span>
+  )},
+  { key: 'ville', label: 'Ville', render: r => (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${r.ville === 'EBOLOWA' ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-200 dark:border-primary-800/60' : 'bg-gold-100 text-gold-700 border-gold-200 dark:bg-gold-500/15 dark:text-gold-300 dark:border-gold-500/30'}`}>
+      {r.ville === 'EBOLOWA' ? 'Ébolowa' : 'Monatélé'}
+    </span>
+  )},
 ];
 
 export default function Campus() {
-  const { data, loading, create, update, remove } = useCrud('campus');
-  const [modal, setModal] = useState({ open: false, item: null });
-  const [form, setForm]   = useState(BLANK);
+  const { data, loading, create, update, remove } = useCrud('campus', { nom: 'Campus', genre: 'm' });
+  const [modal, setModal]   = useState({ open: false, item: null });
+  const [form, setForm]     = useState(BLANK);
   const [saving, setSaving] = useState(false);
 
   const openCreate = () => { setForm(BLANK); setModal({ open: true, item: null }); };
@@ -30,23 +48,27 @@ export default function Campus() {
     try {
       modal.item ? await update(modal.item.id, form) : await create(form);
       setModal({ open: false, item: null });
+    } catch {
+      /* toast d'erreur déjà affiché par useCrud */
     } finally { setSaving(false); }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Supprimer ce campus ?')) await remove(id);
+    const ok = await askConfirm({
+      title: 'Supprimer ce campus ?',
+      description: 'Les salles rattachées seront également supprimées.',
+    });
+    if (ok) remove(id);
   };
 
   return (
-    <div className="space-y-5 max-w-3xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-etext font-display text-2xl font-semibold">Campus</h1>
-          <p className="text-emuted text-sm mt-0.5">Sites physiques de la FS-UEB</p>
-        </div>
-        <Button onClick={openCreate}><Plus size={15} /> Ajouter</Button>
-      </div>
-
+    <PageShell
+      icon={MapPin}
+      title="Campus"
+      subtitle="Sites physiques de la FS-UEB"
+      count={loading ? null : data.length}
+      action={<Button onClick={openCreate}><Plus size={14} /> Ajouter</Button>}
+    >
       <Table columns={COLS} data={data} loading={loading}
         onEdit={openEdit} onDelete={handleDelete}
         emptyText="Aucun campus enregistré." />
@@ -66,6 +88,6 @@ export default function Campus() {
           </select>
         </F>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

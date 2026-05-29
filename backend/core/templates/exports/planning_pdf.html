@@ -4,281 +4,313 @@
   <meta charset="UTF-8">
   <title>Planning {{ semaine.date_debut|date:"d/m/Y" }} — {{ semaine.date_fin|date:"d/m/Y" }}</title>
   <style>
-    /* ── Format page UEB officiel ──────────────────────────────────────── */
+    /* ════════════════════════════════════════════════════════════════
+       PLANNING OFFICIEL FS-UEB — modèle V1 « réplique officielle »
+       En-tête bilingue CENTRÉ, logos empilés (fond blanc, sans carré).
+       Couleur réservée aux en-têtes de jours et au bandeau salle/campus.
+       Intérieur du tableau sobre (texte noir) mais police imposante.
+       Bordures noires fines. Titres : police inchangée (serif).
+       ════════════════════════════════════════════════════════════════ */
+    :root {
+      --bleu:       #1E3A8A;
+      --bleu-pale:  #EDF1F9;
+      --encre:      #000000;
+      --gris:       #333333;
+      --bord:       #222222;   /* bordures noires fines */
+      --pause-bg:   #F2F2F0;
+    }
+
     @page {
       size: A4 landscape;
-      margin: 1.5cm;
-
-      /* Pied de page : numéro de page centré */
+      margin: 11mm 12mm 13mm 12mm;
       @bottom-center {
-        content: "Page " counter(page) " sur " counter(pages);
-        font-family: Arial, Calibri, sans-serif;
-        font-size: 8pt;
-        color: #555;
+        content: "Page " counter(page) " / " counter(pages);
+        font-family: "Liberation Serif", "DejaVu Serif", serif;
+        font-size: 8pt; color: #777;
+      }
+      @bottom-right {
+        content: "Faculté des Sciences · UEB";
+        font-family: "Liberation Serif", "DejaVu Serif", serif;
+        font-size: 7pt; color: #aaa;
       }
     }
 
+    * { box-sizing: border-box; }
     body {
-      font-family: Arial, Calibri, sans-serif;
-      font-size: 10pt;
-      color: #000;
-      margin: 0;
-      padding: 0;
+      font-family: "DejaVu Sans", "Carlito", sans-serif;
+      font-size: 9pt; color: var(--encre); margin: 0; padding: 0;
     }
 
-    /* ── En-tête bilingue ─────────────────────────────────────────────── */
-    .header {
-      display: table;
-      width: 100%;
-      table-layout: fixed;
-      margin-bottom: 8mm;
-      border-bottom: 1pt solid #000;
-      padding-bottom: 4mm;
-    }
-    .header > div {
-      display: table-cell;
-      vertical-align: top;
-      font-size: 8.5pt;
-      line-height: 1.25;
-    }
-    .header .fr   { width: 38%; text-align: left;   padding-right: 4mm; }
-    .header .ctr  { width: 24%; text-align: center; vertical-align: middle; }
-    .header .en   { width: 38%; text-align: right;  padding-left: 4mm; }
+    .sheet { page-break-after: always; }
+    .sheet:last-of-type { page-break-after: avoid; }
 
-    .header-logos {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4mm;
-    }
-    .header-logos img {
-      width: 22mm;
-      height: 22mm;
-      object-fit: contain;
-    }
+    /* ── En-tête bilingue — chaque bloc CENTRÉ dans sa colonne ────────── */
+    .head { display: table; width: 100%; table-layout: fixed; }
+    .head > div { display: table-cell; vertical-align: top; }
+    .head .fr  { width: 39%; text-align: center; padding: 0 3mm; }
+    .head .ctr { width: 22%; text-align: center; vertical-align: middle; }
+    .head .en  { width: 39%; text-align: center; padding: 0 3mm; }
 
-    .stars { letter-spacing: 1px; }
-
-    .ref {
-      margin-top: 3mm;
-      font-weight: bold;
-      font-size: 9pt;
+    .head .fr div, .head .en div {
+      font-family: "Liberation Serif", "DejaVu Serif", serif;
+      font-size: 7.5pt; line-height: 1.12; color: var(--encre);
     }
-    .em-date {
-      margin-top: 3mm;
-      font-style: italic;
-      font-size: 9pt;
+    .head .nation { font-weight: bold; font-size: 8pt; }
+    .head .org    { font-weight: bold; }
+    .head .stars  { font-size: 6pt; letter-spacing: 1.5px; color: #555; }
+
+    /* Logos empilés, fond blanc (plus de carré noir) */
+    .head-logos img {
+      width: 15mm; height: 15mm; object-fit: contain; display: block;
+      margin: 0 auto;
+    }
+    .head-logos img + img { margin-top: 1mm; }
+
+    /* Filet sobre sous l'en-tête (sans couleur vive) */
+    .rule {
+      margin-top: 2.5mm; border-top: 1.4pt solid #000;
     }
 
-    /* ── Titre principal ──────────────────────────────────────────────── */
-    .titre {
+    /* ── Titre (police inchangée) + N° réf / date ────────────────────── */
+    .titrebar {
+      margin: 3mm 0 2mm;
+      display: table; width: 100%; table-layout: fixed;
+    }
+    .titrebar > div { display: table-cell; vertical-align: middle; }
+    .titrebar .ref-col  { width: 24%; text-align: left;  font-size: 8pt; color: var(--gris); }
+    .titrebar .titre    { width: 52%; text-align: center; }
+    .titrebar .date-col { width: 24%; text-align: right; font-size: 8pt; color: var(--gris); font-style: italic; }
+
+    .titre .t1 {
+      font-family: "Liberation Serif", "DejaVu Serif", serif;
+      font-size: 16pt; font-weight: bold; letter-spacing: 1.2pt;
+      color: var(--bleu); text-transform: uppercase;
+    }
+    .titre .t2 {
+      font-family: "Liberation Serif", "DejaVu Serif", serif;
+      font-size: 9pt; font-weight: bold; color: var(--gris); margin-top: 0.5mm;
+    }
+
+    /* ── Bandeau salle : ligne centrée sobre, valeurs en bleu ─────────── */
+    .infos {
       text-align: center;
-      margin: 6mm 0 2mm;
-      font-size: 14pt;
-      font-weight: bold;
-      letter-spacing: 0.5pt;
+      margin: 1mm 0 3mm;
+      padding: 1.8mm 0;
+      border-top: 0.5pt solid var(--bord);
+      border-bottom: 0.5pt solid var(--bord);
+      font-size: 9.5pt; color: var(--encre);
+      font-family: "Liberation Serif", "DejaVu Serif", serif;
     }
-    .sous-titre {
-      text-align: center;
-      margin: 0 0 6mm;
-      font-size: 11pt;
-      font-weight: bold;
-    }
+    .infos .lbl { color: var(--gris); }
+    .infos b    { color: var(--bleu); font-weight: bold; }
+    .infos .sep { color: #999; padding: 0 2mm; }
 
-    /* ── Bandeau par salle ─────────────────────────────────────────────── */
-    .meta-salle {
-      margin: 0 0 3mm;
-      padding: 2mm 3mm;
-      background: #f0f0f0;
-      border: 0.5pt solid #888;
-      font-size: 9.5pt;
-    }
-    .meta-salle b { font-weight: bold; }
-
-    /* ── Tableau jours × créneaux ──────────────────────────────────────── */
+    /* ── Grille jours × créneaux ──────────────────────────────────────── */
     table.grille {
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      margin-bottom: 8mm;
-      page-break-inside: avoid;
+      border: 1pt solid #000;
     }
-    table.grille th,
+    /* En-tête de jours : SEULE zone colorée du tableau (bleu plein) */
+    table.grille thead th {
+      background: var(--bleu);
+      color: #fff;
+      font-family: "Liberation Serif", "DejaVu Serif", serif;
+      font-size: 9.5pt; font-weight: bold;
+      text-transform: uppercase; letter-spacing: 0.6pt;
+      padding: 2.4mm 1mm; text-align: center;
+      border: 0.5pt solid #16306e;
+    }
+    table.grille thead th.h-horaire { width: 23mm; }
+
     table.grille td {
-      border: 0.5pt solid #000;
-      padding: 2mm;
-      vertical-align: top;
-      text-align: left;
-      font-size: 8.5pt;
-      word-wrap: break-word;
-    }
-    table.grille th {
-      background: #e8e8e8;
-      font-weight: bold;
-      text-align: center;
-      font-size: 9pt;
-    }
-    table.grille td.horaire {
-      background: #f5f5f5;
-      text-align: center;
-      font-weight: bold;
-      width: 16mm;
+      border: 0.5pt solid var(--bord);
+      padding: 1.8mm 1.5mm;
       vertical-align: middle;
-    }
-    table.grille .cours .classe     { font-weight: bold; font-size: 8pt; }
-    table.grille .cours .code-ue    { color: #444; font-size: 8pt; }
-    table.grille .cours .intitule   { font-size: 8pt; }
-    table.grille .cours .enseignant { font-style: italic; color: #333; font-size: 7.5pt; }
-
-    /* ── Lignes de pause entre les créneaux ──────────────────────────── */
-    table.grille tr.pause-row td {
-      background: #F3F4F6;
-      padding: 1mm 2mm;
-      height: 6mm;
-    }
-    table.grille tr.pause-row td.horaire {
-      background: #F3F4F6;
-      font-weight: normal;
-      font-style: italic;
-      font-size: 7.5pt;
-      color: #555;
-    }
-
-    /* ── Bloc NB (dernière page) ───────────────────────────────────────── */
-    .nb {
-      margin-top: 8mm;
-      font-size: 8.5pt;
-      font-style: italic;
-      line-height: 1.35;
-      page-break-inside: avoid;
-    }
-    .nb b { font-weight: bold; font-style: normal; }
-
-    /* ── Signature ─────────────────────────────────────────────────────── */
-    .signature {
-      margin-top: 12mm;
-      text-align: right;
-      page-break-inside: avoid;
-    }
-    .signature img {
-      width: 45mm;
-      height: auto;
-    }
-
-    /* Une nouvelle salle = nouvelle page (sauf pour la première) */
-    .salle-page { page-break-before: always; }
-    .salle-page:first-of-type { page-break-before: avoid; }
-
-    .vide {
       text-align: center;
-      font-style: italic;
-      color: #777;
-      padding: 20mm 0;
+      height: 22mm;
+    }
+    /* Pages sans en-tête (2e salle et +) : lignes plus hautes pour remplir
+       l'espace libéré par l'en-tête, et éviter un grand vide en bas. */
+    table.grille-fill tr:not(.pause) td { height: 31mm; }
+
+    /* Colonne horaires : teinte douce, gras */
+    td.horaire {
+      background: var(--bleu-pale);
+      color: var(--bleu);
+      font-family: "Liberation Serif", "DejaVu Serif", serif;
+      font-weight: bold; font-size: 9.5pt;
+      width: 23mm;
+    }
+
+    /* Cellule de cours : sobre (noir), police imposante */
+    .cours .classe   { font-weight: bold; color: var(--encre); font-size: 9.5pt; line-height: 1.12; }
+    .cours .ue       { font-weight: bold; color: var(--encre); font-size: 10pt; letter-spacing: 0.4pt; margin: 0.4mm 0; }
+    .cours .intitule { color: #111; font-size: 8.5pt; line-height: 1.15; }
+    .cours .prof     { color: #222; font-style: italic; font-size: 8.5pt; margin-top: 0.4mm; }
+
+    td.vide { background: #FCFCFC; }
+
+    /* Lignes de pause — fines, discrètes, neutres */
+    tr.pause td {
+      background: var(--pause-bg);
+      height: 5mm; padding: 0.5mm 2mm;
+      border: 0.5pt solid var(--bord);
+    }
+    tr.pause td.horaire {
+      background: var(--pause-bg); color: #777;
+      font-family: "DejaVu Sans", sans-serif;
+      font-weight: normal; font-style: italic; font-size: 7.5pt;
+    }
+    tr.pause .pause-lbl {
+      text-align: center; color: #888; font-style: italic;
+      font-size: 8pt; letter-spacing: 3pt; text-transform: uppercase;
+    }
+
+    /* ── Clôture : NB + signature (dernière page) ─────────────────────── */
+    .closing { page-break-inside: avoid; margin-top: 5mm; }
+    .nb {
+      border: 0.6pt solid var(--bord);
+      border-left: 2.4pt solid var(--bleu);
+      background: #FCFCFC;
+      padding: 3mm 4mm;
+      font-size: 9pt; font-style: italic; line-height: 1.45; color: var(--encre);
+    }
+    .nb .lbl { font-style: normal; font-weight: bold; color: var(--bleu); }
+    .nb b { font-style: normal; font-weight: bold; }
+
+    .signature { margin-top: 8mm; text-align: right; }
+    .signature img { width: 42mm; height: auto; }
+
+    .empty {
+      text-align: center; font-style: italic; color: #888;
+      padding: 30mm 0; font-size: 10pt;
     }
   </style>
 </head>
 <body>
 
-  {% comment %}
-    En-tête bilingue : @page bottom-center gère seulement la pagination.
-    L'en-tête riche est placée en haut du document. Chaque salle débute
-    sur une nouvelle page (.salle-page) et la grille a page-break-inside
-    avoid pour éviter une coupure visuelle au milieu d'une demi-journée.
-  {% endcomment %}
-  <div class="header">
-    <div class="fr">
-      <div>RÉPUBLIQUE DU CAMEROUN</div>
-      <div>PAIX – TRAVAIL – PATRIE</div>
-      <div class="stars">*******</div>
-      <div>MINISTÈRE DE L'ENSEIGNEMENT SUPÉRIEUR</div>
-      <div class="stars">*******</div>
-      <div>UNIVERSITÉ D'ÉBOLOWA</div>
-      <div class="stars">*******</div>
-      <div>FACULTÉ DES SCIENCES</div>
-      <div class="stars">*******</div>
-      <div>DIVISION DES AFFAIRES ACADÉMIQUES, DE LA SCOLARITÉ ET DE LA RECHERCHE</div>
-      <div class="stars">*******</div>
-      <div class="ref">N° {{ semaine.numero_reference|default:"…………" }}/UEb/DFS/DAARS</div>
-    </div>
-
-    <div class="ctr">
-      <div class="header-logos">
-        <img src="{{ logo_ueb_path }}" alt="Logo UEB">
-        <img src="{{ logo_fs_path }}"  alt="Logo FS">
-      </div>
-    </div>
-
-    <div class="en">
-      <div>REPUBLIC OF CAMEROON</div>
-      <div>PEACE-WORK-FATHERLAND</div>
-      <div class="stars">******</div>
-      <div>MINISTRY OF HIGHER EDUCATION</div>
-      <div class="stars">*******</div>
-      <div>THE UNIVERSITY OF EBOLOWA</div>
-      <div class="stars">*******</div>
-      <div>FACULTY OF SCIENCE</div>
-      <div class="stars">*******</div>
-      <div>DIVISION OF ACADEMIC AFFAIRS, EDUCATION AND RESEARCH</div>
-      <div class="stars">*******</div>
-      <div class="em-date">Ebolowa, le {{ date_emission|date:"d F Y" }}</div>
-    </div>
-  </div>
-
-  <div class="titre">PLANNING DES COURS</div>
-  <div class="sous-titre">ANNÉE ACADÉMIQUE {{ semaine.annee_academique.libelle }}</div>
-
-  {# ── Une section par salle ayant au moins une séance ────────────────── #}
   {% for bloc in salles_pleines %}
-    <div class="salle-page">
-      <div class="meta-salle">
-        <b>Semestre :</b> {{ semaine.semestre }} &nbsp;·&nbsp;
-        <b>Campus :</b> {{ bloc.salle.campus.nom }} &nbsp;·&nbsp;
-        <b>Salle :</b> {{ bloc.salle.nom }} &nbsp;·&nbsp;
-        <b>Semaine :</b> Du {{ semaine.date_debut|date:"d/m/Y" }} au {{ semaine.date_fin|date:"d/m/Y" }}
+  <section class="sheet">
+
+    {% if forloop.first %}
+    {# ── En-tête bilingue officiel : UNIQUEMENT sur la 1re page ─────── #}
+    <div class="head">
+      <div class="fr">
+        <div class="nation">RÉPUBLIQUE DU CAMEROUN</div>
+        <div>Paix – Travail – Patrie</div>
+        <div class="stars">*******</div>
+        <div>MINISTÈRE DE L'ENSEIGNEMENT SUPÉRIEUR</div>
+        <div class="stars">*******</div>
+        <div class="org">UNIVERSITÉ D'ÉBOLOWA</div>
+        <div class="stars">*******</div>
+        <div class="org">FACULTÉ DES SCIENCES</div>
+        <div class="stars">*******</div>
+        <div>DIVISION DES AFFAIRES ACADÉMIQUES, DE LA SCOLARITÉ ET DE LA RECHERCHE</div>
       </div>
 
-      <table class="grille">
-        <thead>
-          <tr>
-            <th style="width: 16mm;">Horaires</th>
-            {% for jour in jours_libelles %}<th>{{ jour }}</th>{% endfor %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for ligne in bloc.lignes %}
-            <tr{% if ligne.type == 'pause' %} class="pause-row"{% endif %}>
+      <div class="ctr">
+        <div class="head-logos">
+          <img src="{{ logo_ueb_path }}" alt="UEB">
+          <img src="{{ logo_fs_path }}"  alt="FS">
+        </div>
+      </div>
+
+      <div class="en">
+        <div class="nation">REPUBLIC OF CAMEROON</div>
+        <div>Peace – Work – Fatherland</div>
+        <div class="stars">******</div>
+        <div>MINISTRY OF HIGHER EDUCATION</div>
+        <div class="stars">*******</div>
+        <div class="org">THE UNIVERSITY OF EBOLOWA</div>
+        <div class="stars">*******</div>
+        <div class="org">FACULTY OF SCIENCE</div>
+        <div class="stars">*******</div>
+        <div>DIVISION OF ACADEMIC AFFAIRS, EDUCATION AND RESEARCH</div>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    {# ── Titre + N° réf + date ─────────────────────────────────────── #}
+    <div class="titrebar">
+      <div class="ref-col">N° {{ semaine.numero_reference|default:"…………" }}/UEb/DFS/DAARS</div>
+      <div class="titre">
+        <div class="t1">Planning des cours</div>
+        <div class="t2">ANNÉE ACADÉMIQUE {{ semaine.annee_academique.libelle }}</div>
+      </div>
+      <div class="date-col">Ébolowa, le {{ date_emission|date:"d F Y" }}</div>
+    </div>
+    {% endif %}
+
+    {# ── Bandeau salle (ligne sobre, valeurs en bleu) — sur chaque page #}
+    <div class="infos">
+      <span class="lbl">Semestre</span> <b>{{ semaine.semestre }}</b>
+      <span class="sep">·</span>
+      <span class="lbl">Campus</span> <b>{{ bloc.salle.campus.nom }}</b>
+      <span class="sep">·</span>
+      <span class="lbl">Salle</span> <b>{{ bloc.salle.nom }}</b>
+      <span class="sep">·</span>
+      <span class="lbl">Semaine</span> <b>du {{ semaine.date_debut|date:"d/m/Y" }} au {{ semaine.date_fin|date:"d/m/Y" }}</b>
+    </div>
+
+    {# ── Grille ────────────────────────────────────────────────────── #}
+    <table class="grille{% if not forloop.first %} grille-fill{% endif %}">
+      <thead>
+        <tr>
+          <th class="h-horaire">Horaires</th>
+          {% for jour in jours_libelles %}<th>{{ jour }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for ligne in bloc.lignes %}
+          {% if ligne.type == 'pause' %}
+            <tr class="pause">
+              <td class="horaire">{{ ligne.horaire }}</td>
+              <td class="pause-lbl" colspan="6">Pause · {{ ligne.horaire }}</td>
+            </tr>
+          {% else %}
+            <tr>
               <td class="horaire">{{ ligne.horaire }}</td>
               {% for cell in ligne.jours %}
-                <td>
-                  {% if cell %}
+                {% if cell %}
+                  <td>
                     <div class="cours">
                       <div class="classe">{{ cell.classe }}</div>
-                      <div class="code-ue">{{ cell.code_ue }}</div>
+                      <div class="ue">{{ cell.code_ue }}</div>
                       <div class="intitule">{{ cell.intitule }}</div>
-                      <div class="enseignant">{{ cell.enseignant }}</div>
+                      <div class="prof">{{ cell.enseignant }}</div>
                     </div>
-                  {% endif %}
-                </td>
+                  </td>
+                {% else %}
+                  <td class="vide"></td>
+                {% endif %}
               {% endfor %}
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {# ── NB + signature : après la dernière salle ──────────────────── #}
+    {% if forloop.last %}
+      <div class="closing">
+        <div class="nb">
+          <span class="lbl">NB :</span> <b>1.</b> Ce calendrier est dynamique et susceptible d'être modifié. Les étudiants sont invités à bien vouloir régulièrement (quotidiennement) consulter le babillard pour s'enquérir des dernières modifications.
+          <br><br>
+          <b>2.</b> Les salles A, B, C, D, E de TP et Multimédia sont sur le site du Campus principal (Décanat de la Faculté des Sciences) et les salles F, G, H, I et J, K, L et O sur le site du campus secondaire (Lycée Classique). Quant aux salles M et N, elles se trouvent au campus C en face du CRA. Vous trouverez sur la porte de chaque salle la lettre correspondante. Et les salles telles que A.M, B.M, C.M, D.M, Amphi 500, Terrain sont au campus de Monatélé.
+        </div>
+        <div class="signature">
+          <img src="{{ cachet_path }}" alt="Cachet du Doyen">
+        </div>
+      </div>
+    {% endif %}
+
+  </section>
   {% empty %}
-    <div class="vide">Aucune séance planifiée pour cette semaine.</div>
+    <div class="empty">Aucune séance planifiée pour cette semaine.</div>
   {% endfor %}
-
-  {# ── Bloc NB + signature : sur la même dernière page logique ────────── #}
-  <div class="nb">
-    <b>NB :</b> <b>1.</b> Ce calendrier est dynamique et susceptible d'être modifié. Les étudiants sont invités à bien vouloir régulièrement (quotidiennement) consulter le babillard pour s'enquérir des dernières modifications.
-    <br><br>
-    <b>2.</b> Les salles A, B, C, D, E de TP et Multimédia sont sur le site du Campus principal (Décanat de la Faculté des Sciences) et les salles F, G, H, I et J, K, L et O sur le site du campus secondaire (Lycée Classique). Quant aux salles M et N, elles se trouvent au campus C en face du CRA. Vous trouverez sur la porte de chaque salle la lettre correspondante. Et les salles telles que A.M, B.M, C.M, D.M, Amphi 500, Terrain sont au campus de Monatélé.
-  </div>
-
-  <div class="signature">
-    <img src="{{ cachet_path }}" alt="Cachet du Doyen">
-  </div>
 
 </body>
 </html>

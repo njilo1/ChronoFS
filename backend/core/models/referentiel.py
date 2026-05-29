@@ -11,11 +11,14 @@ et inversement. Une même filière pédagogique présente dans les deux
 villes = deux enregistrements `Filiere` distincts.
 """
 
+import re
+
 from django.db import models
 
 from core.constants import (
     Grade,
     Niveau,
+    StatutEnseignant,
     TypeSalle,
     Ville,
 )
@@ -92,6 +95,18 @@ class Filiere(models.Model):
     ville    = models.CharField(max_length=20, choices=Ville.choices)
     effectif = models.IntegerField(default=0)
 
+    # Surcharge optionnelle : impose UN campus précis (parmi ceux de la ville
+    # de la filière). Laisser vide = seule la contrainte de ville s'applique.
+    # Cas d'usage : une filière dont l'effectif n'entre que dans l'amphi E du
+    # Campus Principal, qu'on veut épingler à ce campus quoi qu'il arrive.
+    campus_obligatoire = models.ForeignKey(
+        Campus,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='filieres_forcees',
+        help_text="Optionnel : force toutes les séances de cette filière dans ce campus.",
+    )
+
     class Meta:
         verbose_name        = 'Filière'
         verbose_name_plural = 'Filières'
@@ -99,6 +114,37 @@ class Filiere(models.Model):
         # Permet d'autoriser TIC L1 dans 2 villes différentes.
         unique_together     = ('code', 'niveau', 'ville')
         ordering            = ['code', 'niveau', 'ville']
+
+    def get_campus_contraint(self):
+        """
+        Campus imposé pour cette filière, ou None si seule la ville contraint.
+
+        Utilisé par le solveur (H7bis) : quand un campus est renvoyé, toutes
+        les séances de la filière doivent y être placées ; sinon n'importe
+        quelle salle de la bonne ville convient.
+        """
+        return self.campus_obligatoire
+
+    @property
+    def libelle_classe(self) -> str:
+        """
+        Libellé d'affichage de la classe pour les exports (PDF/DOCX) et la
+        consultation : le niveau est inclus, mais sans doublon.
+
+        Le champ `nom` contient parfois déjà le niveau ("TIC L1",
+        "M1 IA et BIG DATA") et parfois non ("Chimie Minéral"). On
+        n'ajoute le niveau que s'il n'est pas déjà présent comme mot, pour
+        éviter l'affichage fautif "TIC L1 L1" tout en conservant
+        "Chimie Minéral L3".
+        """
+        nom = (self.nom or '').strip()
+        if not self.niveau:
+            return nom
+        niveau_label = self.get_niveau_display()
+        for marqueur in (self.niveau, niveau_label):
+            if marqueur and re.search(rf'\b{re.escape(marqueur)}\b', nom, re.IGNORECASE):
+                return nom
+        return f'{nom} {self.niveau}'.strip()
 
     def __str__(self):
         return f'{self.code} {self.niveau} ({self.get_ville_display()})'
@@ -115,10 +161,21 @@ class Enseignant(models.Model):
 
     nom          = models.CharField(max_length=100)
     grade        = models.CharField(max_length=10, choices=Grade.choices)
+    statut       = models.CharField(
+        max_length=12,
+        choices=StatutEnseignant.choices,
+        default=StatutEnseignant.PERMANENT,
+        help_text="Les vacataires sont prioritaires lors de la génération du planning.",
+    )
     departements = models.ManyToManyField(
         Departement,
         related_name='enseignants',
         blank=True,
+    )
+    actif        = models.BooleanField(
+        default=True,
+        help_text="Décocher pour désactiver l'enseignant (indisponible, congé, départ). "
+                  "Un enseignant inactif n'est plus proposé pour de nouvelles affectations.",
     )
 
     class Meta:

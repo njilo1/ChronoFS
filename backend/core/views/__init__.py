@@ -2,7 +2,7 @@
 
 from .auth import LoginView, MeView, RefreshView
 from .chefs import ChefDeptViewSet
-from .mon_departement import MesEnseignantsViewSet, MesUEsViewSet
+from .mon_departement import MesEnseignantsViewSet, MesFilieresViewSet, MesUEsViewSet
 from .referentiel import (
     AnneeAcademiqueViewSet,
     CampusViewSet,
@@ -18,7 +18,7 @@ from .imports import (
     ImportPreviewView,
     TemplateExcelView,
 )
-from .seances import SeanceViewSet
+from .seances import PlanningActuelView, SeanceViewSet
 
 
 __all__ = [
@@ -32,11 +32,11 @@ __all__ = [
     # Chefs (DAR)
     'ChefDeptViewSet',
     # Mon département (chef)
-    'MesUEsViewSet', 'MesEnseignantsViewSet',
+    'MesUEsViewSet', 'MesEnseignantsViewSet', 'MesFilieresViewSet',
     # Hebdomadaire
     'SemaineViewSet',
     # Imports
     'ImportPlanningViewSet', 'ImportPreviewView', 'TemplateExcelView',
     # Séances
-    'SeanceViewSet',
+    'SeanceViewSet', 'PlanningActuelView',
 ]

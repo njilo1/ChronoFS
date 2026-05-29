@@ -13,7 +13,7 @@ Routes exposées :
 
 from __future__ import annotations
 
-from django.http import HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status, viewsets
@@ -27,9 +27,11 @@ from rest_framework.views import APIView
 from core.constants import Role, StatutSemaine
 from core.models import (
     Departement,
+    Enseignant,
     ImportPlanning,
     ImportPlanningHistorique,
     Semaine,
+    UE,
 )
 from core.permissions import IsDAR
 from core.serializers import (
@@ -70,6 +72,40 @@ def _resoudre_departement(request) -> Departement:
         return Departement.objects.get(pk=int(did))
     except (Departement.DoesNotExist, ValueError, TypeError):
         raise ValidationError({'departement': f"Aucun département avec l'identifiant « {did} »."})
+
+
+def _serialiser_rapport(semaine: Semaine, dept: Departement, rapport) -> dict:
+    """
+    Met le rapport de parsing au format attendu par le frontend chef :
+    `nb_ues`, `ues` (code/intitulé/enseignant) et `erreurs` (messages lisibles).
+    """
+    ue_ids  = {l.ue_id for l in rapport.lignes_valides if l.ue_id}
+    ens_ids = {l.enseignant_id for l in rapport.lignes_valides if l.enseignant_id}
+    ues_map = {u.id: u for u in UE.objects.filter(id__in=ue_ids)}
+    ens_map = {e.id: e for e in Enseignant.objects.filter(id__in=ens_ids)}
+
+    ues_apercu = []
+    for ligne in rapport.lignes_valides:
+        u = ues_map.get(ligne.ue_id)
+        e = ens_map.get(ligne.enseignant_id)
+        ues_apercu.append({
+            'code':       u.code if u else '—',
+            'intitule':   u.intitule if u else '—',
+            'enseignant': f'{e.get_grade_display()} {e.nom}' if e else 'Non assigné',
+            'erreur':     None,
+        })
+
+    erreurs_txt = [f"Ligne {er['ligne']} : {er['message']}" for er in rapport.erreurs]
+
+    return {
+        'semaine':     semaine.id,
+        'departement': dept.id,
+        'nb_ues':      rapport.lignes_ok,
+        'nb_erreurs':  rapport.lignes_erreur,
+        'ues':         ues_apercu,
+        'erreurs':     erreurs_txt,
+        'rapport':     rapport.to_json(),
+    }
 
 
 def _verifier_semaine_ouverte(semaine: Semaine):
@@ -139,24 +175,7 @@ class ImportPreviewView(APIView):
 
         rapport = parse_import_excel(fichier.read(), dept)
 
-        return Response({
-            'semaine':     semaine.id,
-            'departement': dept.id,
-            'rapport':     rapport.to_json(),
-            'apercu':      [
-                {
-                    'ligne':         l.ligne_num,
-                    'filiere_id':    l.filiere_id,
-                    'ue_id':         l.ue_id,
-                    'enseignant_id': l.enseignant_id,
-                    'jour':          l.jour,
-                    'creneau':       l.creneau,
-                    'type_cours':    l.type_cours,
-                    'observations':  l.observations,
-                }
-                for l in rapport.lignes_valides
-            ],
-        })
+        return Response(_serialiser_rapport(semaine, dept, rapport))
 
 
 # ── 3. ViewSet principal pour les imports ───────────────────────────────────
@@ -257,6 +276,31 @@ class ImportPlanningViewSet(viewsets.ReadOnlyModelViewSet):
 
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # ── Téléchargement du fichier Excel déposé ───────────────────────────────
+    @extend_schema(
+        summary="Télécharger le fichier .xlsx déposé pour cet import",
+        responses={200: OpenApiResponse(description="Fichier .xlsx")},
+    )
+    @action(detail=True, methods=['get'])
+    def fichier(self, request, pk=None):
+        instance = self.get_object()  # queryset déjà scopé (chef = son dept)
+        if not instance.fichier:
+            raise ValidationError({'detail': "Aucun fichier n'est associé à cet import."})
+
+        instance.fichier.open('rb')
+        try:
+            contenu = instance.fichier.read()
+        finally:
+            instance.fichier.close()
+
+        nom = instance.fichier.name.split('/')[-1]
+        response = HttpResponse(
+            contenu,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        response['Content-Disposition'] = f'attachment; filename="{nom}"'
+        return response
 
     # ── /imports/mine/ — vue dédiée chef ────────────────────────────────────
     @extend_schema(summary="Mes imports (envois du chef connecté)")

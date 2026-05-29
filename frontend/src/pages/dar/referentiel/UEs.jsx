@@ -1,25 +1,42 @@
 import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, BookOpen } from 'lucide-react';
 import { useCrud } from '../../../hooks/useCrud';
+import { askConfirm } from '../../../store/confirmStore';
 import api from '../../../services/api';
+import PageShell from '../../../components/ui/PageShell';
 import Table from '../../../components/ui/Table';
 import Button from '../../../components/ui/Button';
 import Modal from '../../../components/ui/Modal';
 
-const iCls = 'w-full bg-ebg border border-eborder rounded-lg px-3 py-2 text-sm text-etext focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 transition-all';
+const iCls = 'input-field';
 function F({ label, children }) {
-  return <div><label className="text-emuted text-xs mb-1 block">{label}</label>{children}</div>;
+  return (
+    <div>
+      <label className="text-[11px] font-bold text-ink-muted uppercase tracking-widest mb-1.5 block">{label}</label>
+      {children}
+    </div>
+  );
 }
 
 const BLANK = { code: '', intitule: '', filiere: '' };
+
 const COLS = [
-  { key: 'code',     label: 'Code' },
+  { key: 'code', label: 'Code', render: r => (
+    <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-primary-50 text-primary-800 border border-primary-200 font-mono tracking-wide">
+      {r.code}
+    </span>
+  )},
   { key: 'intitule', label: 'Intitulé' },
-  { key: 'filiere',  label: 'Filière', render: r => r.filiere ? `${r.filiere.code ?? ''} ${r.filiere.niveau ?? ''}`.trim() : '—' },
+  { key: 'filiere', label: 'Filière', render: r => r.filiere ? (
+    <span className="text-xs text-ink-muted dark:text-ink-dark-muted">
+      <strong>{r.filiere.code ?? ''}</strong>
+      {r.filiere.niveau ? ` · ${r.filiere.niveau}` : ''}
+    </span>
+  ) : '—' },
 ];
 
 export default function UEs() {
-  const { data, loading, create, update, remove } = useCrud('ues');
+  const { data, loading, create, update, remove } = useCrud('ues', { nom: 'UE', genre: 'f' });
   const [filieres, setFilieres] = useState([]);
   const [modal, setModal]       = useState({ open: false, item: null });
   const [form, setForm]         = useState(BLANK);
@@ -30,11 +47,8 @@ export default function UEs() {
     api.get('/filieres/').then(r => setFilieres(Array.isArray(r.data) ? r.data : (r.data.results ?? [])));
   }, []);
 
-  const openCreate = () => {
-    setForm({ ...BLANK, filiere: filieres[0]?.id ?? '' });
-    setModal({ open: true, item: null });
-  };
-  const openEdit = (item) => {
+  const openCreate = () => { setForm({ ...BLANK, filiere: filieres[0]?.id ?? '' }); setModal({ open: true, item: null }); };
+  const openEdit   = (item) => {
     setForm({ code: item.code, intitule: item.intitule, filiere: item.filiere?.id ?? item.filiere });
     setModal({ open: true, item });
   };
@@ -43,38 +57,45 @@ export default function UEs() {
     try {
       modal.item ? await update(modal.item.id, form) : await create(form);
       setModal({ open: false, item: null });
+    } catch {
+      /* toast d'erreur déjà affiché par useCrud */
     } finally { setSaving(false); }
+  };
+
+  const handleDelete = async (id) => {
+    const ok = await askConfirm({ title: 'Supprimer cette UE ?' });
+    if (ok) remove(id);
   };
 
   const filtered = data.filter(u =>
     !search ||
     u.code?.toLowerCase().includes(search.toLowerCase()) ||
-    u.intitule?.toLowerCase().includes(search.toLowerCase())
+    u.intitule?.toLowerCase().includes(search.toLowerCase()) ||
+    u.filiere?.code?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="space-y-5 max-w-5xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-etext font-display text-2xl font-semibold">Unités d'Enseignement</h1>
-          <p className="text-emuted text-sm mt-0.5">UEs du référentiel pédagogique</p>
-        </div>
-        <Button onClick={openCreate}><Plus size={15} /> Ajouter</Button>
-      </div>
-
+    <PageShell
+      icon={BookOpen}
+      gradient="from-primary-800 to-primary-700"
+      title="Unités d'Enseignement"
+      subtitle="Référentiel pédagogique des UEs"
+      count={loading ? null : data.length}
+      action={<Button onClick={openCreate}><Plus size={14} /> Ajouter</Button>}
+    >
       <input
-        className="w-full max-w-xs bg-ecard border border-eborder rounded-lg px-3 py-2 text-sm text-etext placeholder:text-emuted/50 focus:outline-none focus:border-gold/50 transition-all"
-        placeholder="Rechercher une UE…"
+        className="input-field max-w-sm shadow-card"
+        placeholder="Rechercher par code, intitulé ou filière…"
         value={search}
         onChange={e => setSearch(e.target.value)}
       />
 
       <Table columns={COLS} data={filtered} loading={loading}
-        onEdit={openEdit} onDelete={id => window.confirm('Supprimer cette UE ?') && remove(id)}
+        onEdit={openEdit} onDelete={handleDelete}
         emptyText="Aucune UE trouvée." />
 
       <Modal open={modal.open} onClose={() => setModal({ open: false, item: null })}
-        title={modal.item ? 'Modifier l\'UE' : 'Nouvelle UE'}
+        title={modal.item ? "Modifier l'UE" : 'Nouvelle UE'}
         onConfirm={handleSave} loading={saving}>
         <F label="Code (ex : INF3101)">
           <input className={iCls} value={form.code} placeholder="INF3101"
@@ -93,6 +114,6 @@ export default function UEs() {
           </select>
         </F>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

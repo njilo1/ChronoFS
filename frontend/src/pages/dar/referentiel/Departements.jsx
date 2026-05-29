@@ -1,25 +1,37 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Building2 } from 'lucide-react';
 import { useCrud } from '../../../hooks/useCrud';
+import { askConfirm } from '../../../store/confirmStore';
+import PageShell from '../../../components/ui/PageShell';
 import Table from '../../../components/ui/Table';
 import Button from '../../../components/ui/Button';
 import Modal from '../../../components/ui/Modal';
 
-const iCls = 'w-full bg-ebg border border-eborder rounded-lg px-3 py-2 text-sm text-etext focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 transition-all';
+const iCls = 'input-field';
 function F({ label, children }) {
-  return <div><label className="text-emuted text-xs mb-1 block">{label}</label>{children}</div>;
+  return (
+    <div>
+      <label className="text-[11px] font-bold text-ink-muted uppercase tracking-widest mb-1.5 block">{label}</label>
+      {children}
+    </div>
+  );
 }
 
 const BLANK = { nom: '', code: '' };
+
 const COLS = [
-  { key: 'code', label: 'Code' },
-  { key: 'nom',  label: 'Département' },
+  { key: 'code', label: 'Code', render: r => (
+    <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-primary-50 text-primary-800 border border-primary-200">
+      {r.code}
+    </span>
+  )},
+  { key: 'nom', label: 'Département' },
 ];
 
 export default function Departements() {
-  const { data, loading, create, update, remove } = useCrud('departements');
-  const [modal, setModal] = useState({ open: false, item: null });
-  const [form, setForm]   = useState(BLANK);
+  const { data, loading, create, update, remove } = useCrud('departements', { nom: 'Département', genre: 'm' });
+  const [modal, setModal]   = useState({ open: false, item: null });
+  const [form, setForm]     = useState(BLANK);
   const [saving, setSaving] = useState(false);
 
   const openCreate = () => { setForm(BLANK); setModal({ open: true, item: null }); };
@@ -30,21 +42,29 @@ export default function Departements() {
     try {
       modal.item ? await update(modal.item.id, form) : await create(form);
       setModal({ open: false, item: null });
+    } catch {
+      /* toast d'erreur déjà affiché par useCrud */
     } finally { setSaving(false); }
   };
 
-  return (
-    <div className="space-y-5 max-w-3xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-etext font-display text-2xl font-semibold">Départements</h1>
-          <p className="text-emuted text-sm mt-0.5">Départements de la Faculté des Sciences</p>
-        </div>
-        <Button onClick={openCreate}><Plus size={15} /> Ajouter</Button>
-      </div>
+  const handleDelete = async (id) => {
+    const ok = await askConfirm({
+      title: 'Supprimer ce département ?',
+      description: 'Les filières, UE et imports rattachés seront également supprimés.',
+    });
+    if (ok) remove(id);
+  };
 
+  return (
+    <PageShell
+      icon={Building2}
+      title="Départements"
+      subtitle="Départements de la Faculté des Sciences"
+      count={loading ? null : data.length}
+      action={<Button onClick={openCreate}><Plus size={14} /> Ajouter</Button>}
+    >
       <Table columns={COLS} data={data} loading={loading}
-        onEdit={openEdit} onDelete={id => window.confirm('Supprimer ?') && remove(id)}
+        onEdit={openEdit} onDelete={handleDelete}
         emptyText="Aucun département enregistré." />
 
       <Modal open={modal.open} onClose={() => setModal({ open: false, item: null })}
@@ -59,6 +79,6 @@ export default function Departements() {
             onChange={e => setForm({ ...form, nom: e.target.value })} />
         </F>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

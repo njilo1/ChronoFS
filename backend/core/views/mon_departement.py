@@ -13,9 +13,9 @@ filière d'un autre département.
 from rest_framework import serializers, viewsets
 from rest_framework.exceptions import PermissionDenied
 
-from core.models import Enseignant, UE
+from core.models import Enseignant, Filiere, UE
 from core.permissions import IsChefDept, ScopedToOwnDept
-from core.serializers import EnseignantSerializer, UESerializer
+from core.serializers import EnseignantSerializer, FiliereSerializer, UESerializer
 
 
 # ─── UE du chef ──────────────────────────────────────────────────────────────
@@ -139,4 +139,31 @@ class MesEnseignantsViewSet(viewsets.ModelViewSet):
             .prefetch_related('departements')
             .filter(departements__id=dept_id)
             .distinct()
+        )
+
+
+# ─── Filières du chef (lecture seule) ────────────────────────────────────────
+class MesFilieresViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Filières du département du chef — lecture seule.
+
+    Sert à peupler le sélecteur de filière dans le formulaire de création
+    d'UE côté chef (le référentiel /filieres/ étant réservé à la DAR).
+    """
+
+    queryset           = Filiere.objects.none()
+    serializer_class   = FiliereSerializer
+    permission_classes = [IsChefDept, ScopedToOwnDept]
+    filterset_fields   = ['niveau', 'ville']
+    ordering_fields    = ['code', 'niveau', 'ville']
+    ordering           = ['code', 'niveau']
+
+    def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Filiere.objects.none()
+        dept_id = self.request.user.departement_id
+        return (
+            Filiere.objects
+            .select_related('departement')
+            .filter(departement_id=dept_id)
         )

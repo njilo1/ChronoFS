@@ -94,22 +94,20 @@ Chaque app expose : `models.py` → `serializers.py` → `views.py` (ModelViewSe
 30–79  → Salle M ou N (30-40 places)
 15–29  → Salles D/F/G/H/I/J/K/L (20 places)
 ≤ 15   → Bureaux (15 places)
-Tolérance 10% si aucune salle idéale disponible.
 ```
+**Tolérance de sur-effectif (forçage)** : faute de salle idéale libre, une salle peut être remplie jusqu'à `capacité × (1 + TOLERANCE_SURCAPACITE)`, soit **+40 %** (ex. une salle de 50 places monte à ~70). Constante `TOLERANCE_SURCAPACITE` dans `core/constants.py`. Le solver pénalise ce forçage (`FACTEUR_SURCHARGE`) pour ne l'utiliser qu'en dernier recours.
 
 ### Conflits enseignant
 Un enseignant dans plusieurs départements est **normal** — pas un conflit. Conflit = **même enseignant + même jour + même heure_debut** dans le même `EmploiDuTemps`.
 
-### Algorithme de génération (app `emplois/`)
-Greedy Best-First avec heuristique MRV (Minimum Remaining Values).
+### Algorithme de génération (`core/scheduling/solver.py`, OR-Tools CP-SAT)
+Le chef IMPOSE jour + créneau dans son fichier Excel ; le solver choisit **uniquement la salle** de chaque `DemandeCours` (variables booléennes `x[d, s]`).
 
-**Contraintes dures** (jamais violées) : H1 salle libre, H2 enseignant libre, H3 niveau libre, H4 capacité ≥ effectif (tolérance 10 %), H5 salle dans le même campus que la filière.
+**Contraintes dures** (jamais violées) : H1 ≤ 1 salle/demande · H2 ≤ 1 cours par (salle, jour, créneau) · H3 ≤ 1 cours par (enseignant, jour, créneau) · H4 ≤ 1 cours par (filière, jour, créneau) · H5 capacité avec tolérance de sur-effectif (+40 %, cf. ci-dessus) · H6 type de salle compatible avec le type de cours · H7 ville salle = ville filière · H7bis campus imposé (`campus_obligatoire`) respecté · **H8 un enseignant n'enseigne que dans UNE ville par jour** (pas d'aller-retour inter-villes, quel que soit l'écart de créneaux) · **H9 une filière (classe) reste dans UN SEUL campus pour toute la semaine** (pas de saut de campus, même en même ville).
 
-**Contraintes douces** (optimisées par score, bas = mieux) : S1 préférence horaire (10h15 > 13h > 7h30 > 15h45), S2 début de semaine, S3 minimiser gaspillage de places, S4/S5 éviter combinaisons fatigantes (7h30 + 15h45 ou 7h30 + 13h), S6 deux séances d'une même matière le même jour.
+**Objectif** (lexicographique, poids `w1 ≫ w2 ≫ w3 ≫ w4`) : 1) maximiser le **nombre de cours placés** (« tous les cours de la semaine doivent être faits ») ; 2) **priorité aux vacataires** (`statut = VACATAIRE`) ; 3) **équité** — à nombre de cours égal, sacrifier d'abord les filières les plus programmées ; 4) ajuster **capacité ≈ effectif** (minimiser gaspillage et forçage).
 
-**Ordre de traitement MRV** : effectif décroissant → nb salles candidates croissant → code alpha (déterministe).
-
-**Pipeline** : `POST /api/emplois/generer/` → place les `Creneau` en base → renvoie les cours non placés (jamais ignorés silencieusement) → admin publie via `POST /api/sessions/<id>/publier/` → export PDF.
+**Pipeline** : `POST /api/semaines/<id>/generer/` → régénère les `Seance` en base → renvoie les cours non plaçables avec raisons lisibles (jamais « infeasible » brut) → DAR publie via `POST /api/semaines/<id>/publier/` → export PDF/DOCX. Taux de programmation par département : `GET /api/semaines/<id>/taux-programmation/`.
 
 ## Points d'attention
 
