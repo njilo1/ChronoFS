@@ -24,7 +24,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.constants import Role, StatutSemaine
+from core.constants import Role, StatutSemaine, TypeNotification
 from core.models import (
     Departement,
     Enseignant,
@@ -40,6 +40,8 @@ from core.serializers import (
 )
 from core.services.excel_service import generate_template_excel, parse_import_excel
 from core.services.imports_service import confirmer_import
+from core.services.notifications import notifier_dar
+from core.services.verif_imports import analyser_avertissements
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -97,14 +99,19 @@ def _serialiser_rapport(semaine: Semaine, dept: Departement, rapport) -> dict:
 
     erreurs_txt = [f"Ligne {er['ligne']} : {er['message']}" for er in rapport.erreurs]
 
+    # Avertissements (non bloquants) : conflits inter-départements détectés
+    # par la vérification intelligente, au-dessus du parsing.
+    avertissements = analyser_avertissements(rapport, dept, semaine)
+
     return {
-        'semaine':     semaine.id,
-        'departement': dept.id,
-        'nb_ues':      rapport.lignes_ok,
-        'nb_erreurs':  rapport.lignes_erreur,
-        'ues':         ues_apercu,
-        'erreurs':     erreurs_txt,
-        'rapport':     rapport.to_json(),
+        'semaine':        semaine.id,
+        'departement':    dept.id,
+        'nb_ues':         rapport.lignes_ok,
+        'nb_erreurs':     rapport.lignes_erreur,
+        'ues':            ues_apercu,
+        'erreurs':        erreurs_txt,
+        'avertissements': [f"Ligne {a['ligne']} : {a['message']}" for a in avertissements],
+        'rapport':        rapport.to_json(),
     }
 
 
@@ -251,6 +258,15 @@ class ImportPlanningViewSet(viewsets.ReadOnlyModelViewSet):
             fichier_nom    = fichier.name,
             fichier_bytes  = contenu,
             rapport        = rapport,
+        )
+
+        notifier_dar(
+            TypeNotification.PLANNING_RECU,
+            titre=f"Planning reçu — {dept.nom}",
+            message=f"Le département « {dept.nom} » a envoyé son planning pour la {semaine} "
+                    f"({rapport.lignes_ok} cours).",
+            lien='/dar/imports',
+            semaine=semaine,
         )
 
         data = ImportPlanningSerializer(nouveau, context={'request': request}).data

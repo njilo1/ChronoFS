@@ -21,9 +21,18 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from core.constants import Role, StatutSemaine
-from core.models import ArchivePlanning, DemandeCours, Departement, Seance, Semaine
+from core.constants import (
+    Role,
+    SALLES_AUTORISEES_PAR_TYPE_COURS,
+    StatutSemaine,
+    TOLERANCE_SURCAPACITE,
+    TypeNotification,
+    TypeSalle,
+)
+from core.models import ArchivePlanning, DemandeCours, Departement, Salle, Seance, Semaine
 from core.permissions import IsDAR, IsDARorReadOnly
+from core.services.disponibilites import creneaux_bloques
+from core.services.notifications import notifier_chefs
 from core.scheduling.generation_service import generer_planning
 from core.serializers import (
     ArchivePlanningSerializer,
@@ -65,6 +74,14 @@ class SemaineViewSet(viewsets.ModelViewSet):
         semaine.statut = StatutSemaine.IMPORTS_OUVERTS
         semaine.save(update_fields=['statut'])
 
+        notifier_chefs(
+            TypeNotification.IMPORTS_OUVERTS,
+            titre=f"Imports ouverts — {semaine}",
+            message="Vous pouvez désormais déposer le planning de votre département pour cette semaine.",
+            lien='/chef/import',
+            semaine=semaine,
+        )
+
         return Response(SemaineSerializer(semaine).data)
 
     # ── Publication du planning (DAR) ────────────────────────────────────────
@@ -89,6 +106,14 @@ class SemaineViewSet(viewsets.ModelViewSet):
 
         semaine.statut = StatutSemaine.PUBLIE
         semaine.save(update_fields=['statut'])
+
+        notifier_chefs(
+            TypeNotification.PLANNING_PUBLIE,
+            titre=f"Planning publié — {semaine}",
+            message="Le planning de cette semaine est publié et consultable.",
+            lien='/chef/planning',
+            semaine=semaine,
+        )
 
         return Response(SemaineSerializer(semaine).data)
 
@@ -115,6 +140,14 @@ class SemaineViewSet(viewsets.ModelViewSet):
         semaine.statut = StatutSemaine.IMPORTS_CLOTURES
         semaine.save(update_fields=['statut'])
 
+        notifier_chefs(
+            TypeNotification.IMPORTS_CLOTURES,
+            titre=f"Imports clôturés — {semaine}",
+            message="La période de dépôt est terminée : vous ne pouvez plus envoyer ni modifier de planning pour cette semaine.",
+            lien='/chef/import',
+            semaine=semaine,
+        )
+
         return Response(SemaineSerializer(semaine).data)
 
     # ── Génération du planning (DAR) ─────────────────────────────────────────
@@ -138,6 +171,153 @@ class SemaineViewSet(viewsets.ModelViewSet):
         time_limit = float(request.data.get('time_limit_sec', 30))
         resume = generer_planning(semaine, time_limit_sec=time_limit)
         return Response(resume)
+
+    # ── Placement manuel d'un cours (Assistant de résolution — niveau 2) ──────
+    @extend_schema(
+        summary="Placer manuellement un cours non placé (suggestion appliquée)",
+        description=(
+            "Crée une Seance pour une DemandeCours non placée, au jour/créneau/"
+            "salle indiqués (typiquement une suggestion de l'Assistant de "
+            "résolution). Revalide tous les conflits avant d'écrire — action "
+            "déclenchée explicitement par le DAR."
+        ),
+    )
+    @action(detail=True, methods=['post'], url_path='placer-cours', permission_classes=[IsDAR])
+    def placer_cours(self, request, pk=None):
+        semaine = self.get_object()
+        if semaine.statut != StatutSemaine.GENERE:
+            return Response(
+                {'detail': "Le placement manuel n'est possible qu'après génération (statut « Généré »)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        demande_id = request.data.get('demande_id')
+        salle_id   = request.data.get('salle_id')
+        try:
+            jour    = int(request.data.get('jour'))
+            creneau = int(request.data.get('creneau'))
+        except (TypeError, ValueError):
+            return Response({'detail': "jour/creneau invalides."}, status=status.HTTP_400_BAD_REQUEST)
+        if demande_id is None or salle_id is None:
+            return Response(
+                {'detail': "Paramètres requis : demande_id, jour, creneau, salle_id."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        d = (
+            DemandeCours.objects
+            .filter(id=demande_id, import_source__semaine=semaine)
+            .select_related('filiere__campus_obligatoire', 'ue', 'enseignant')
+            .first()
+        )
+        if d is None:
+            return Response({'detail': "Cours introuvable pour cette semaine."}, status=status.HTTP_404_NOT_FOUND)
+        if Seance.objects.filter(semaine=semaine, demande_origine=d).exists():
+            return Response({'detail': "Ce cours est déjà placé."}, status=status.HTTP_400_BAD_REQUEST)
+
+        salle = Salle.objects.filter(id=salle_id, disponible=True).select_related('campus').first()
+        if salle is None:
+            return Response({'detail': "Salle introuvable ou indisponible."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # ── Compatibilité salle ↔ cours ──────────────────────────────────────
+        if salle.campus.ville != d.filiere.ville:
+            return Response(
+                {'detail': f"La salle {salle.nom} n'est pas dans la ville de {d.filiere}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        campus_force = d.filiere.get_campus_contraint()
+        if campus_force is not None and salle.campus_id != campus_force.id:
+            return Response(
+                {'detail': f"{d.filiere} doit se tenir au campus « {campus_force.nom} »."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if salle.type_salle not in SALLES_AUTORISEES_PAR_TYPE_COURS.get(d.type_cours, []):
+            return Response(
+                {'detail': f"La salle {salle.nom} n'accepte pas un cours de type {d.type_cours}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        effectif = d.effectif_declare or d.filiere.effectif or 1
+        if salle.type_salle != TypeSalle.TERRAIN and salle.capacite * (1 + TOLERANCE_SURCAPACITE) < effectif:
+            return Response(
+                {'detail': f"La salle {salle.nom} ({salle.capacite} places) est trop petite pour {effectif} étudiants."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # ── Indisponibilité de l'enseignant au créneau visé ──────────────────
+        if d.enseignant_id and (d.enseignant_id, jour, creneau) in creneaux_bloques(semaine):
+            return Response(
+                {'detail': f"{d.enseignant.nom} est indisponible à ce créneau."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        # ── Conflits au créneau visé (revalidation au moment de l'application) ─
+        autres = Seance.objects.filter(semaine=semaine, jour=jour, creneau=creneau)
+        if autres.filter(salle=salle).exists():
+            return Response({'detail': f"La salle {salle.nom} est déjà occupée à ce créneau."}, status=status.HTTP_409_CONFLICT)
+        if autres.filter(filiere=d.filiere).exists():
+            return Response({'detail': f"{d.filiere} a déjà un cours à ce créneau."}, status=status.HTTP_409_CONFLICT)
+        if d.enseignant_id and autres.filter(enseignant_id=d.enseignant_id).exists():
+            return Response({'detail': f"{d.enseignant.nom} a déjà un cours à ce créneau."}, status=status.HTTP_409_CONFLICT)
+
+        # H9 — la classe doit rester sur un seul campus pour la semaine.
+        if Seance.objects.filter(semaine=semaine, filiere=d.filiere).exclude(salle__campus_id=salle.campus_id).exists():
+            return Response(
+                {'detail': f"{d.filiere} est déjà programmée dans un autre campus cette semaine."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        # H8 — l'enseignant ne change pas de ville le même jour.
+        if d.enseignant_id and Seance.objects.filter(
+            semaine=semaine, enseignant_id=d.enseignant_id, jour=jour,
+        ).exclude(salle__campus__ville=salle.campus.ville).exists():
+            return Response(
+                {'detail': f"{d.enseignant.nom} enseigne déjà dans une autre ville ce jour-là."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        seance = Seance.objects.create(
+            semaine=semaine, demande_origine=d,
+            filiere=d.filiere, ue=d.ue, enseignant=d.enseignant,
+            salle=salle, jour=jour, creneau=creneau, type_cours=d.type_cours,
+            modifie_manuellement=True, modifie_le=timezone.now(), modifie_par=request.user,
+        )
+        return Response(SeanceSerializer(seance).data, status=status.HTTP_201_CREATED)
+
+    # ── Séances impactées par une absence (Phase C) ──────────────────────────
+    @extend_schema(
+        summary="Séances impactées par une indisponibilité d'enseignant",
+        responses={200: SeanceSerializer(many=True)},
+    )
+    @action(detail=True, methods=['get'], url_path='seances-impactees')
+    def seances_impactees(self, request, pk=None):
+        semaine = self.get_object()
+        bloque  = creneaux_bloques(semaine)
+        seances = (
+            Seance.objects
+            .filter(semaine=semaine, enseignant__isnull=False)
+            .select_related('filiere', 'ue', 'enseignant', 'salle__campus')
+        )
+        impactees = [s for s in seances if (s.enseignant_id, s.jour, s.creneau) in bloque]
+        return Response(SeanceSerializer(impactees, many=True).data)
+
+    # ── Cours récupérables dans l'espace libre (Phase D) ─────────────────────
+    @extend_schema(summary="Cours non placés re-posables dans l'espace libre actuel")
+    @action(detail=True, methods=['get'], url_path='non-places')
+    def non_places(self, request, pk=None):
+        from core.scheduling.conseiller import calculer_recuperables
+        semaine = self.get_object()
+        return Response(calculer_recuperables(semaine))
+
+    # ── Annuler une séance (Phase C : absence = suppression simple) ───────────
+    @extend_schema(summary="Annuler (supprimer) une séance de la semaine")
+    @action(detail=True, methods=['post'], url_path='annuler-seance', permission_classes=[IsDAR])
+    def annuler_seance(self, request, pk=None):
+        semaine    = self.get_object()
+        seance_id  = request.data.get('seance_id')
+        seance = Seance.objects.filter(id=seance_id, semaine=semaine).first()
+        if seance is None:
+            return Response({'detail': "Séance introuvable pour cette semaine."}, status=status.HTTP_404_NOT_FOUND)
+        seance.delete()
+        return Response({'detail': 'Séance annulée.'})
 
     # ── Lister les séances d'une semaine ─────────────────────────────────────
     @extend_schema(

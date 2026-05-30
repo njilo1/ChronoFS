@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Plus, Users } from 'lucide-react';
+import { Plus, Users, CalendarOff } from 'lucide-react';
 import { useCrud } from '../../../hooks/useCrud';
 import { askConfirm } from '../../../store/confirmStore';
 import PageShell from '../../../components/ui/PageShell';
 import Table from '../../../components/ui/Table';
 import Button from '../../../components/ui/Button';
 import Modal from '../../../components/ui/Modal';
+import AbsenceModal from '../../../components/ui/AbsenceModal';
 
 const iCls = 'input-field';
 function F({ label, children }) {
@@ -55,6 +56,18 @@ export default function ChefEnseignants() {
   const [form, setForm]     = useState(BLANK);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
+  const [absenceFor, setAbsenceFor] = useState(null);
+
+  // Colonne « Absences » : ouvre la modale de gestion des absences ponctuelles.
+  const cols = [
+    ...COLS,
+    { key: 'absences', label: 'Absences', render: r => (
+      <button onClick={() => setAbsenceFor(r)} title="Signaler / gérer les absences"
+        className="inline-flex items-center gap-1 text-[12px] font-medium text-primary-700 dark:text-primary-300 hover:underline">
+        <CalendarOff size={13} /> Signaler
+      </button>
+    )},
+  ];
 
   const openCreate = () => { setForm(BLANK); setModal({ open: true, item: null }); };
   const openEdit   = (item) => {
@@ -101,7 +114,7 @@ export default function ChefEnseignants() {
         onChange={e => setSearch(e.target.value)}
       />
 
-      <Table columns={COLS} data={filtered} loading={loading}
+      <Table columns={cols} data={filtered} loading={loading}
         onEdit={openEdit} onDelete={handleDelete}
         emptyText="Aucun enseignant. Cliquez sur « Ajouter » pour en créer un." />
 
@@ -130,6 +143,12 @@ export default function ChefEnseignants() {
           L'enseignant sera automatiquement rattaché à votre département.
         </p>
       </Modal>
+
+      <AbsenceModal
+        open={!!absenceFor}
+        onClose={() => setAbsenceFor(null)}
+        enseignant={absenceFor}
+      />
     </PageShell>
   );
 }

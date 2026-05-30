@@ -160,6 +160,35 @@ class SolverTests(_SolverTestBase):
         # La demande non placée doit avoir une raison renseignée
         self.assertTrue(len(result.non_places[0].raisons) > 0)
 
+    def test_assistant_resolution_suggere_un_creneau_libre(self):
+        """
+        Une seule salle, deux cours au MÊME créneau → l'un n'est pas placé.
+        L'Assistant de résolution doit proposer un créneau alternatif libre.
+        """
+        salle = Salle.objects.create(
+            nom='A', campus=self.campus_eb, capacite=50, type_salle=TypeSalle.COURS,
+        )
+        imp = self._import()
+        f_l2 = Filiere.objects.create(
+            code='TST', niveau=Niveau.L2, ville=Ville.EBOLOWA,
+            nom='TST L2', departement=self.dept, effectif=25,
+        )
+        ue2 = UE.objects.create(code='TST201', intitule='UE Test 2', filiere=f_l2)
+
+        d1 = self._demande(import_source=imp, jour=Jour.LUNDI, creneau=Creneau.C0)
+        d2 = self._demande(import_source=imp, filiere=f_l2, ue=ue2,
+                           jour=Jour.LUNDI, creneau=Creneau.C0)
+
+        result = self._solve([d1, d2], [salle])
+
+        self.assertEqual(len(result.non_places), 1)
+        np = result.non_places[0]
+        # Au moins une suggestion, et c'est bien une proposition de déplacement.
+        self.assertTrue(np.suggestions)
+        self.assertTrue(any('Déplacer' in s['label'] for s in np.suggestions))
+        # Une suggestion actionnable porte la cible (jour/créneau/salle).
+        self.assertTrue(any('salle_id' in s for s in np.suggestions))
+
     # 3 ───────────────────────────────────────────────────────────────────────
     def test_filiere_ebolowa_force_ebolowa(self):
         """Filière Ébolowa avec salles dans les 2 villes → choix Ébolowa."""

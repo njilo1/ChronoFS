@@ -11,11 +11,18 @@ filière d'un autre département.
 """
 
 from rest_framework import serializers, viewsets
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 
-from core.models import Enseignant, Filiere, UE
+from core.constants import Creneau, Jour, StatutSemaine, TypeNotification
+from core.models import Enseignant, Filiere, IndisponibiliteEnseignant, Seance, UE
 from core.permissions import IsChefDept, ScopedToOwnDept
-from core.serializers import EnseignantSerializer, FiliereSerializer, UESerializer
+from core.serializers import (
+    EnseignantSerializer,
+    FiliereSerializer,
+    IndisponibiliteSerializer,
+    UESerializer,
+)
+from core.services.notifications import notifier_dar
 
 
 # ─── UE du chef ──────────────────────────────────────────────────────────────
@@ -166,4 +173,81 @@ class MesFilieresViewSet(viewsets.ReadOnlyModelViewSet):
             Filiere.objects
             .select_related('departement')
             .filter(departement_id=dept_id)
+        )
+
+
+# ─── Indisponibilités des enseignants du chef ────────────────────────────────
+class MesIndisponibilitesViewSet(viewsets.ModelViewSet):
+    """
+    CRUD des indisponibilités des enseignants de mon département (chef).
+
+    L'UI démarre par le PONCTUEL (absence sur une semaine précise) ; le
+    modèle accepte aussi le récurrent.
+    """
+
+    queryset           = IndisponibiliteEnseignant.objects.none()
+    serializer_class   = IndisponibiliteSerializer
+    permission_classes = [IsChefDept, ScopedToOwnDept]
+    filterset_fields   = ['enseignant', 'semaine', 'type']
+    ordering           = ['-cree_le']
+
+    def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return IndisponibiliteEnseignant.objects.none()
+        dept_id = self.request.user.departement_id
+        return (
+            IndisponibiliteEnseignant.objects
+            .filter(enseignant__departements__id=dept_id)
+            .select_related('enseignant', 'semaine')
+            .distinct()
+        )
+
+    def perform_create(self, serializer):
+        dept_id = self.request.user.departement_id
+        ens     = serializer.validated_data.get('enseignant')
+        if not ens or not ens.departements.filter(id=dept_id).exists():
+            raise ValidationError({'enseignant': "Cet enseignant n'appartient pas à votre département."})
+
+        typ = serializer.validated_data.get('type') or IndisponibiliteEnseignant.Type.PONCTUELLE
+        if typ == IndisponibiliteEnseignant.Type.PONCTUELLE and not serializer.validated_data.get('semaine'):
+            raise ValidationError({'semaine': "Précisez la semaine de l'absence ponctuelle."})
+
+        indispo = serializer.save(cree_par=self.request.user, type=typ)
+        self._notifier_dar_si_impact(indispo)
+
+    @staticmethod
+    def _notifier_dar_si_impact(indispo):
+        """
+        Si l'absence touche une semaine DÉJÀ générée/publiée et impacte des
+        séances existantes, on prévient le DAR (qui seul peut corriger le
+        planning). Sinon, rien : la dispo sera simplement respectée à la
+        prochaine génération.
+        """
+        semaine = indispo.semaine
+        if not semaine or semaine.statut not in (StatutSemaine.GENERE, StatutSemaine.PUBLIE):
+            return
+
+        qs = Seance.objects.filter(
+            semaine=semaine, enseignant=indispo.enseignant, jour=indispo.jour,
+        )
+        if indispo.creneau is not None:
+            qs = qs.filter(creneau=indispo.creneau)
+        n = qs.count()
+        if n == 0:
+            return
+
+        ens     = indispo.enseignant
+        dept    = getattr(indispo.cree_par, 'departement', None)
+        creneau = Creneau(indispo.creneau).label if indispo.creneau is not None else 'toute la journée'
+        notifier_dar(
+            TypeNotification.ABSENCE_SIGNALEE,
+            titre=f"Absence signalée — {ens.nom}",
+            message=(
+                f"{ens.nom} sera absent {Jour(indispo.jour).label} ({creneau}) — "
+                f"{n} séance(s) à replacer"
+                + (f" (dépt {dept.nom})" if dept else "")
+                + f". Semaine {semaine}."
+            ),
+            lien=f'/dar/semaines/{semaine.id}/planning',
+            semaine=semaine,
         )

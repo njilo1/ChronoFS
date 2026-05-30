@@ -8,6 +8,7 @@ import { extractApiError } from '../../services/apiError';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
+import AssistantResolutionModal from '../../components/ui/AssistantResolutionModal';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import useThemeStore from '../../store/themeStore';
 
@@ -59,6 +60,8 @@ export default function Semaines() {
   const [form, setForm]         = useState(BLANK);
   const [saving, setSaving]     = useState(false);
   const [busy, setBusy]         = useState(null);
+  const [resolution, setResolution] = useState(null);
+  const [resolWeek, setResolWeek]   = useState(null);
   const isDark = useThemeStore((s) => s.theme === 'dark');
   const navigate = useNavigate();
 
@@ -125,8 +128,12 @@ export default function Semaines() {
         const placees = data?.placees ?? 0;
         const nonPlacees = data?.non_placees?.length ?? 0;
         toast.success(`Planning généré : ${placees} séance(s) placée(s).`);
+        // Assistant de résolution : on ouvre la fenêtre de conseils dès qu'il
+        // reste des cours non placés (raisons + suggestions concrètes).
         if (nonPlacees > 0) {
-          toast.warning(`${nonPlacees} cours n'ont pas pu être placés. Vérifiez la grille.`);
+          toast.warning(`${nonPlacees} cours non placé(s) — voir l'Assistant de résolution.`);
+          setResolution(data);
+          setResolWeek(sw.id);
         }
       } else {
         toast.success(SUCCESS[key] ?? 'Action effectuée.');
@@ -272,6 +279,14 @@ export default function Semaines() {
             onChange={e => setForm({ ...form, numero_reference: e.target.value })} />
         </F>
       </Modal>
+
+      <AssistantResolutionModal
+        open={!!resolution}
+        onClose={() => setResolution(null)}
+        result={resolution}
+        semaineId={resolWeek}
+        onApplied={load}
+      />
     </div>
   );
 }

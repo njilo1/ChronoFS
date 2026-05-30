@@ -145,9 +145,12 @@ export default function Table({
         </thead>
         <tbody>
           {data.map((row, i) => (
-            <tr
+            <motion.tr
               key={row.id ?? i}
               className="group"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: Math.min(i * 0.03, 0.45), ease: [0.22, 1, 0.36, 1] }}
               onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = c.hover; }}
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
               style={{ transition: 'background-color 0.15s ease' }}
@@ -242,7 +245,7 @@ export default function Table({
                   </div>
                 </td>
               )}
-            </tr>
+            </motion.tr>
           ))}
         </tbody>
       </table>

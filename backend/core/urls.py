@@ -19,6 +19,7 @@ from core.views import (
     ChefDeptViewSet,
     DepartementViewSet,
     EnseignantViewSet,
+    ChangePasswordView,
     FiliereViewSet,
     ImportPlanningViewSet,
     ImportPreviewView,
@@ -26,7 +27,9 @@ from core.views import (
     MeView,
     MesEnseignantsViewSet,
     MesFilieresViewSet,
+    MesIndisponibilitesViewSet,
     MesUEsViewSet,
+    NotificationViewSet,
     PlanningActuelView,
     RefreshView,
     SalleViewSet,
@@ -50,6 +53,7 @@ router.register('semaines',            SemaineViewSet,          basename='semain
 router.register('chefs-departement',   ChefDeptViewSet,         basename='chef-dept')
 router.register('imports',             ImportPlanningViewSet,   basename='import')
 router.register('seances',             SeanceViewSet,           basename='seance')
+router.register('notifications',       NotificationViewSet,     basename='notification')
 
 
 # ── Router secondaire (chef de département) ──────────────────────────────────
@@ -57,6 +61,7 @@ router_chef = DefaultRouter()
 router_chef.register('ues',          MesUEsViewSet,          basename='mes-ues')
 router_chef.register('enseignants',  MesEnseignantsViewSet,  basename='mes-enseignants')
 router_chef.register('filieres',     MesFilieresViewSet,     basename='mes-filieres')
+router_chef.register('indisponibilites', MesIndisponibilitesViewSet, basename='mes-indisponibilites')
 
 
 urlpatterns = [
@@ -64,6 +69,7 @@ urlpatterns = [
     path('auth/login/',   LoginView.as_view(),   name='auth-login'),
     path('auth/refresh/', RefreshView.as_view(), name='auth-refresh'),
     path('auth/me/',      MeView.as_view(),      name='auth-me'),
+    path('auth/change-password/', ChangePasswordView.as_view(), name='auth-change-password'),
 
     # Endpoints chef de département (montés sous /mon-departement/)
     path('mon-departement/', include(router_chef.urls)),

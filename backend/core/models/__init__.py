@@ -28,6 +28,8 @@ from .hebdomadaire import (
     Seance,
     Semaine,
 )
+from .notifications import Notification
+from .disponibilites import IndisponibiliteEnseignant
 
 
 __all__ = [
@@ -38,4 +40,5 @@ __all__ = [
     'AnneeAcademique', 'Semaine',
     'ImportPlanning', 'ImportPlanningHistorique',
     'DemandeCours', 'Seance', 'ArchivePlanning',
+    'Notification',
 ]

@@ -1,4 +1,5 @@
 import { clsx } from 'clsx';
+import { motion } from 'framer-motion';
 
 const MAP = {
   DRAFT:            { bg: 'bg-surface-alt text-ink-muted border-line dark:bg-surface-dark-alt dark:text-ink-dark-muted dark:border-line-dark',         dot: 'bg-ink-subtle dark:bg-ink-dark-subtle', pulse: false },
@@ -27,14 +28,18 @@ export default function Badge({ status, label, className, dot = true }) {
     pulse: false,
   };
   return (
-    <span className={clsx(
-      'inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] border font-semibold leading-snug',
-      cfg.bg, className
-    )}>
+    <motion.span
+      initial={{ opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+      className={clsx(
+        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] border font-semibold leading-snug',
+        cfg.bg, className
+      )}>
       {dot && (
         <span className={clsx('pulse-dot', cfg.dot)} style={!cfg.pulse ? { animation: 'none' } : undefined} />
       )}
       <span className="tracking-wide">{label ?? LABELS[status] ?? status ?? '—'}</span>
-    </span>
+    </motion.span>
   );
 }

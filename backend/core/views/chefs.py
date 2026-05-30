@@ -17,7 +17,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from core.constants import Role
+from core.constants import Role, TypeNotification
 from core.models import User
 from core.permissions import IsDAR
 from core.serializers import (
@@ -26,6 +26,7 @@ from core.serializers import (
     ResetPasswordSerializer,
 )
 from core.serializers.users import _generer_mot_de_passe
+from core.services.notifications import notifier
 
 
 class ChefDeptViewSet(viewsets.ModelViewSet):
@@ -58,6 +59,15 @@ class ChefDeptViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         chef = serializer.save()
 
+        notifier(
+            [chef],
+            TypeNotification.COMPTE_CREE,
+            titre="Bienvenue sur ChronoFS",
+            message="Votre compte chef de département a été créé. Vous pouvez gérer vos UEs, "
+                    "vos enseignants et déposer vos plannings.",
+            lien='/chef',
+        )
+
         data = ChefDeptSerializer(chef).data
         pwd_genere = getattr(chef, '_password_generated', None)
         if pwd_genere:
@@ -81,6 +91,15 @@ class ChefDeptViewSet(viewsets.ModelViewSet):
         nouveau = serializer.validated_data.get('nouveau_password') or _generer_mot_de_passe()
         chef.set_password(nouveau)
         chef.save(update_fields=['password'])
+
+        notifier(
+            [chef],
+            TypeNotification.MOT_DE_PASSE_RESET,
+            titre="Mot de passe réinitialisé",
+            message="Votre mot de passe a été réinitialisé par l'administration. "
+                    "Pensez à le changer depuis votre profil après reconnexion.",
+            lien='/chef',
+        )
 
         return Response({
             'id':                  chef.id,

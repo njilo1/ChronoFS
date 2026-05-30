@@ -273,6 +273,15 @@ export default function ChefImport() {
                 </div>
               )}
 
+              {/* Avertissements non bloquants (vérification intelligente) :
+                  conflits inter-départements. Le chef peut envoyer quand même. */}
+              {preview.avertissements?.length > 0 && (
+                <div className="px-3.5 py-2.5 bg-primary-50 dark:bg-primary-950/20 border border-primary-200 dark:border-primary-800/50 rounded-xl text-primary-800 dark:text-primary-200 text-xs space-y-1 mb-4">
+                  <p className="font-bold mb-0.5">À vérifier (non bloquant) :</p>
+                  {preview.avertissements.map((a, i) => <p key={i}>&#128161; {a}</p>)}
+                </div>
+              )}
+
               <Button onClick={handleSubmit} disabled={loading}>
                 <Upload size={14} /> Confirmer l'envoi
               </Button>

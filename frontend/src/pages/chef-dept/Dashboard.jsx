@@ -16,7 +16,7 @@ import useThemeStore from '../../store/themeStore';
 
 const NIVEAUX = ['L1', 'L2', 'L3', 'M1', 'M2'];
 const GRADE_LABELS = { DR: 'Dr', PR: 'Pr', M: 'M.', MME: 'Mme', ING: 'Ing.' };
-const PIE_COLORS = ['#1E3A8A', '#2E5391', '#5277AE', '#C9A227', '#DBBC5E'];
+const PIE_COLORS = ['#1E3A8A', '#2563EB', '#3B82F6', '#60A5FA', '#06B6D4'];
 
 function arr(r) { return Array.isArray(r.data) ? r.data : (r.data?.results ?? []); }
 
@@ -75,7 +75,7 @@ function ChartCard({ eyebrow, title, delay, children, empty }) {
       transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       className="bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-2xl p-5 shadow-card"
     >
-      <p className="text-[10px] font-bold text-gold-600 dark:text-gold-300 uppercase tracking-[0.22em] mb-0.5">{eyebrow}</p>
+      <p className="text-[10px] font-bold text-primary-700 dark:text-primary-300 uppercase tracking-[0.22em] mb-0.5">{eyebrow}</p>
       <h3 className="heading-display text-ink-strong dark:text-ink-dark-strong text-xl mb-4">{title}</h3>
       {empty ? (
         <div className="h-[200px] flex items-center justify-center text-sm text-ink-muted dark:text-ink-dark-muted text-center px-4">
@@ -95,7 +95,7 @@ function QuickAction({ icon: Icon, label, to, description, delay }) {
           <Icon size={15} className="text-primary-700 dark:text-primary-300" />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-ink dark:text-ink-dark group-hover:text-primary-700 dark:group-hover:text-gold-300 transition-colors">{label}</p>
+          <p className="text-sm font-semibold text-ink dark:text-ink-dark group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors">{label}</p>
           {description && <p className="text-xs text-ink-muted dark:text-ink-dark-muted truncate">{description}</p>}
         </div>
         <ChevronRight size={13} className="ml-auto text-ink-subtle group-hover:text-primary-500 shrink-0 transition-colors" />
@@ -309,7 +309,7 @@ export default function ChefDashboard() {
 
       {/* Accès rapides — pleine largeur sous les graphes */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }}>
-        <p className="text-[10px] font-bold text-gold-600 dark:text-gold-300 uppercase tracking-[0.22em] mb-3">Accès rapides</p>
+        <p className="text-[10px] font-bold text-primary-700 dark:text-primary-300 uppercase tracking-[0.22em] mb-3">Accès rapides</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           <QuickAction icon={FileUp} label="Importer mes cours" to="/chef/import" description="Déposer un fichier Excel" delay={0.48} />
           <QuickAction icon={BookOpen} label="Gérer mes UEs" to="/chef/ues" description="Ajouter ou modifier vos UEs" delay={0.52} />
@@ -324,7 +324,7 @@ export default function ChefDashboard() {
           className="bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-2xl p-5 shadow-card">
           <div className="flex items-start justify-between flex-wrap gap-3 mb-1">
             <div>
-              <p className="text-[10px] font-bold text-gold-600 dark:text-gold-300 uppercase tracking-[0.22em] mb-1.5">Semaine en cours</p>
+              <p className="text-[10px] font-bold text-primary-700 dark:text-primary-300 uppercase tracking-[0.22em] mb-1.5">Semaine en cours</p>
               <h2 className="heading-display text-ink-strong dark:text-ink-dark-strong text-2xl">
                 Du{' '}{new Date(semaine.date_debut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
                 {' '}au{' '}{new Date(semaine.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}

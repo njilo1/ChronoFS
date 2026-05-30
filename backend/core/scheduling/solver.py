@@ -51,12 +51,15 @@ from typing import Optional
 from ortools.sat.python import cp_model
 
 from core.constants import (
+    Creneau,
+    Jour,
     SALLES_AUTORISEES_PAR_TYPE_COURS,
     StatutEnseignant,
     TOLERANCE_SURCAPACITE,
     TypeSalle,
 )
 from core.models import DemandeCours, Salle
+from core.scheduling.conseiller import calculer_suggestions
 
 
 # ── Capacité considérée comme infinie ────────────────────────────────────────
@@ -80,10 +83,11 @@ class Placement:
 
 @dataclass
 class NonPlacement:
-    """Une demande NON placée + raisons humainement lisibles."""
+    """Une demande NON placée + raisons + suggestions de résolution."""
 
-    demande_id: int
-    raisons:    list[str] = field(default_factory=list)
+    demande_id:  int
+    raisons:     list[str] = field(default_factory=list)
+    suggestions: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -109,10 +113,13 @@ class PlanningSolver:
         result = PlanningSolver(demandes, salles).solve(time_limit_sec=30)
     """
 
-    def __init__(self, demandes: list[DemandeCours], salles: list[Salle]):
+    def __init__(self, demandes: list[DemandeCours], salles: list[Salle], indispos=None):
         # On matérialise sous forme de listes ordonnées pour pouvoir indexer.
         self.demandes: list[DemandeCours] = list(demandes)
         self.salles:   list[Salle]        = list(salles)
+        # Créneaux où l'enseignant est indisponible : {(enseignant_id, jour, creneau)}.
+        # Contrainte DURE : un cours sur un tel créneau ne sera jamais placé.
+        self.indispos: set[tuple[int, int, int]] = set(indispos or ())
 
         # Index par id pour debug / API
         self._idx_demande_par_id: dict[int, int] = {d.id: i for i, d in enumerate(self.demandes)}
@@ -150,6 +157,15 @@ class PlanningSolver:
     # ── Étape 1 : pré-filtrer les salles candidates par demande ─────────────
     def _calculer_candidates(self):
         for d_idx, d in enumerate(self.demandes):
+            # Contrainte dure d'indisponibilité : enseignant absent à ce créneau.
+            if d.enseignant_id is not None and (d.enseignant_id, d.jour, d.creneau) in self.indispos:
+                self._raisons_pre[d_idx] = {
+                    f"{d.enseignant.nom} est indisponible "
+                    f"{Jour(d.jour).label} {Creneau(d.creneau).label}."
+                }
+                self.salles_candidates.append([])
+                continue
+
             ville_demande = d.filiere.ville
             types_autorises = SALLES_AUTORISEES_PAR_TYPE_COURS.get(d.type_cours, [])
             effectif = self._effectif(d)
@@ -416,6 +432,18 @@ class PlanningSolver:
                         "de décaler le jour ou le créneau."
                     )
                 non_places.append(NonPlacement(demande_id=d.id, raisons=raisons))
+
+        # ── Assistant de résolution : suggestions concrètes par cours non placé.
+        # On ne suggère des créneaux alternatifs que si un placement partiel
+        # existe (sinon l'occupation est vide et les conseils seraient trompeurs).
+        if non_places and status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+            suggestions = calculer_suggestions(
+                self.demandes, self.salles, self.salles_candidates,
+                placements, {np.demande_id for np in non_places},
+                indispos=self.indispos,
+            )
+            for np in non_places:
+                np.suggestions = suggestions.get(np.demande_id, [])
 
         return ResultatPlanification(
             placements   = placements,

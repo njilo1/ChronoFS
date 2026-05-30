@@ -19,9 +19,37 @@ from __future__ import annotations
 from django.db import transaction
 from django.utils import timezone
 
-from core.constants import StatutSemaine
+from core.constants import Creneau, Jour, StatutSemaine
 from core.models import DemandeCours, Salle, Seance, Semaine
 from core.scheduling.solver import PlanningSolver, ResultatPlanification
+from core.services.disponibilites import creneaux_bloques
+
+
+def _label_jour(j):
+    try:
+        return Jour(j).label
+    except ValueError:
+        return str(j)
+
+
+def _label_creneau(c):
+    try:
+        return Creneau(c).label
+    except ValueError:
+        return str(c)
+
+
+def _decrire_demande(d: DemandeCours) -> dict:
+    """Descripteur lisible d'un cours, pour l'Assistant de résolution."""
+    return {
+        'ue':         getattr(d.ue, 'code', None) or getattr(d.ue, 'intitule', '—'),
+        'intitule':   getattr(d.ue, 'intitule', '') or '',
+        'classe':     getattr(d.filiere, 'nom', None) or getattr(d.filiere, 'code', '—'),
+        'enseignant': getattr(d.enseignant, 'nom', None) or '—',
+        'type_cours': d.type_cours,
+        'jour':       _label_jour(d.jour),
+        'creneau':    _label_creneau(d.creneau),
+    }
 
 
 @transaction.atomic
@@ -73,8 +101,9 @@ def generer_planning(semaine: Semaine, time_limit_sec: float = 30.0) -> dict:
             'statut_semaine': semaine.statut,
         }
 
+    indispos = creneaux_bloques(semaine)
     resultat: ResultatPlanification = (
-        PlanningSolver(demandes, salles).solve(time_limit_sec=time_limit_sec)
+        PlanningSolver(demandes, salles, indispos=indispos).solve(time_limit_sec=time_limit_sec)
     )
 
     # ── 5. Créer les Seance correspondantes ──────────────────────────────────
@@ -104,7 +133,12 @@ def generer_planning(semaine: Semaine, time_limit_sec: float = 30.0) -> dict:
     return {
         'placees':        len(resultat.placements),
         'non_placees':    [
-            {'demande_id': np.demande_id, 'raisons': np.raisons}
+            {
+                'demande_id':  np.demande_id,
+                **_decrire_demande(demandes_par_id[np.demande_id]),
+                'raisons':     np.raisons,
+                'suggestions': np.suggestions,
+            }
             for np in resultat.non_places
         ],
         'duree_ms':       resultat.duree_ms,

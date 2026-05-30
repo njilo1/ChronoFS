@@ -19,6 +19,7 @@ from __future__ import annotations
 import io
 import re
 from dataclasses import dataclass, field
+from difflib import get_close_matches
 from typing import Optional
 
 from openpyxl import Workbook
@@ -577,6 +578,23 @@ def _index_enseignants_par_libelle(dept: Departement) -> dict[str, Enseignant]:
     return index
 
 
+def _suggerer_enseignant(saisi: str, enseignants_idx: dict[str, Enseignant]) -> Optional[str]:
+    """
+    Détecte une faute de frappe probable : renvoie le libellé "Grade Nom" de
+    l'enseignant existant le plus proche de la saisie, ou None.
+
+    Correspondance approximative via difflib (stdlib, aucune dépendance).
+    Le seuil 0.72 évite les faux positifs tout en rattrapant les coquilles.
+    """
+    if not saisi or not enseignants_idx:
+        return None
+    proches = get_close_matches(saisi.upper(), list(enseignants_idx), n=1, cutoff=0.72)
+    if not proches:
+        return None
+    e = enseignants_idx[proches[0]]
+    return f'{e.get_grade_display()} {e.nom}'
+
+
 def _parser_une_ligne(
     row_idx: int,
     row: tuple,
@@ -656,9 +674,11 @@ def _parser_une_ligne(
     if enseignant and enseignant.lower() != 'non assigné':
         enseignant_obj = enseignants_idx.get(enseignant.upper())
         if enseignant_obj is None:
+            proche = _suggerer_enseignant(enseignant, enseignants_idx)
+            indice = f" Vouliez-vous dire « {proche} » ?" if proche else ""
             rapport.ajouter_erreur(
                 row_idx,
-                f"L'enseignant « {enseignant} » n'est pas reconnu. "
+                f"L'enseignant « {enseignant} » n'est pas reconnu.{indice} "
                 "Ajoutez-le depuis « Mon département > Enseignants » avant de réessayer.",
             )
 

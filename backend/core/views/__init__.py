@@ -1,8 +1,13 @@
 """Réexport unifié des vues FSChrono pour brancher dans urls.py."""
 
-from .auth import LoginView, MeView, RefreshView
+from .auth import ChangePasswordView, LoginView, MeView, RefreshView
 from .chefs import ChefDeptViewSet
-from .mon_departement import MesEnseignantsViewSet, MesFilieresViewSet, MesUEsViewSet
+from .mon_departement import (
+    MesEnseignantsViewSet,
+    MesFilieresViewSet,
+    MesIndisponibilitesViewSet,
+    MesUEsViewSet,
+)
 from .referentiel import (
     AnneeAcademiqueViewSet,
     CampusViewSet,
@@ -19,11 +24,12 @@ from .imports import (
     TemplateExcelView,
 )
 from .seances import PlanningActuelView, SeanceViewSet
+from .notifications import NotificationViewSet
 
 
 __all__ = [
     # Auth
-    'LoginView', 'RefreshView', 'MeView',
+    'LoginView', 'RefreshView', 'MeView', 'ChangePasswordView',
     # Référentiel DAR
     'CampusViewSet', 'SalleViewSet',
     'DepartementViewSet', 'FiliereViewSet',
@@ -33,10 +39,13 @@ __all__ = [
     'ChefDeptViewSet',
     # Mon département (chef)
     'MesUEsViewSet', 'MesEnseignantsViewSet', 'MesFilieresViewSet',
+    'MesIndisponibilitesViewSet',
     # Hebdomadaire
     'SemaineViewSet',
     # Imports
     'ImportPlanningViewSet', 'ImportPreviewView', 'TemplateExcelView',
     # Séances
     'SeanceViewSet', 'PlanningActuelView',
+    # Notifications
+    'NotificationViewSet',
 ]

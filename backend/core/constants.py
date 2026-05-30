@@ -139,6 +139,17 @@ class Role(models.TextChoices):
     CHEF_DEPT = 'CHEF_DEPT', 'Chef de département'
 
 
+# ── Types de notification (interactions entre acteurs) ───────────────────────
+class TypeNotification(models.TextChoices):
+    IMPORTS_OUVERTS    = 'IMPORTS_OUVERTS',    'Imports ouverts'
+    IMPORTS_CLOTURES   = 'IMPORTS_CLOTURES',   'Imports clôturés'
+    PLANNING_PUBLIE    = 'PLANNING_PUBLIE',    'Planning publié'
+    PLANNING_RECU      = 'PLANNING_RECU',      'Planning reçu'
+    COMPTE_CREE        = 'COMPTE_CREE',        'Compte créé'
+    MOT_DE_PASSE_RESET = 'MOT_DE_PASSE_RESET', 'Mot de passe réinitialisé'
+    ABSENCE_SIGNALEE   = 'ABSENCE_SIGNALEE',   'Absence signalée'
+
+
 # ── Grades enseignants ───────────────────────────────────────────────────────
 class Grade(models.TextChoices):
     DR  = 'DR',  'Dr'

@@ -33,7 +33,7 @@ function useCountUp(target, delay = 0) {
 }
 
 // Palette bleutée pour les anneaux (un anneau = un département).
-const DEPT_COLORS = ['#1E3A8A', '#1D4ED8', '#3B82F6', '#0EA5E9', '#06B6D4', '#0891B2', '#6366F1', '#8B5CF6'];
+const DEPT_COLORS = ['#1E3A8A', '#1D4ED8', '#3B82F6', '#0EA5E9', '#06B6D4', '#0891B2', '#2563EB', '#60A5FA'];
 
 // Infobulle du graphe circulaire : taux + cours placés du département survolé.
 function OccupationTooltip({ active, payload }) {

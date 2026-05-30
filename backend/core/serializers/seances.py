@@ -77,6 +77,14 @@ class SeanceEditSerializer(serializers.ModelSerializer):
         jour       = attrs.get('jour',       instance.jour)
         creneau    = attrs.get('creneau',    instance.creneau)
 
+        # Indisponibilité de l'enseignant au créneau visé (contrainte dure).
+        if enseignant is not None:
+            from core.services.disponibilites import creneaux_bloques
+            if (enseignant.id, jour, creneau) in creneaux_bloques(instance.semaine):
+                raise serializers.ValidationError({'detail':
+                    f"{enseignant.nom} est indisponible à ce créneau."
+                })
+
         # L'UE choisie doit appartenir à la filière de la séance (on remplace
         # le cours par un autre cours de la même classe — jamais d'une autre).
         if ue is not None and ue.filiere_id != instance.filiere_id:

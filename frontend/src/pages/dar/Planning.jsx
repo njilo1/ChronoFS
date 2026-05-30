@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Filter, LayoutGrid, Download, FileText, AlertCircle, X,
-  Play, Lock, Cpu, Globe, Check, RefreshCw,
+  Play, Lock, Cpu, Globe, Check, RefreshCw, AlertTriangle,
 } from 'lucide-react';
 import api from '../../services/api';
 import { toast } from '../../store/toastStore';
@@ -61,6 +61,10 @@ export default function Planning() {
   const [busy, setBusy]       = useState(null);
   const [moveError, setMoveError] = useState('');
   const [editSeance, setEditSeance] = useState(null);
+  const [impactees, setImpactees] = useState([]);
+  const [annulId, setAnnulId] = useState(null);
+  const [recuperables, setRecuperables] = useState([]);
+  const [applyId, setApplyId] = useState(null);
 
   const loadSeances = useCallback(async () => {
     const r = await api.get(`/semaines/${id}/seances/`);
@@ -77,6 +81,20 @@ export default function Planning() {
       const r = await api.get(`/semaines/${id}/taux-programmation/`);
       setTaux(Array.isArray(r.data) ? r.data : (r.data.results ?? []));
     } catch { /* non bloquant : le panneau reste simplement vide */ }
+  }, [id]);
+
+  const loadImpactees = useCallback(async () => {
+    try {
+      const r = await api.get(`/semaines/${id}/seances-impactees/`);
+      setImpactees(Array.isArray(r.data) ? r.data : (r.data.results ?? []));
+    } catch { /* non bloquant */ }
+  }, [id]);
+
+  const loadRecuperables = useCallback(async () => {
+    try {
+      const r = await api.get(`/semaines/${id}/non-places/`);
+      setRecuperables(Array.isArray(r.data) ? r.data : (r.data.results ?? []));
+    } catch { /* non bloquant */ }
   }, [id]);
 
   useEffect(() => {
@@ -97,7 +115,35 @@ export default function Planning() {
       setUes(arr(ue));
     }).finally(() => setLoading(false));
     loadTaux();
-  }, [id, loadTaux]);
+    loadImpactees();
+    loadRecuperables();
+  }, [id, loadTaux, loadImpactees, loadRecuperables]);
+
+  const annulerSeance = async (seance) => {
+    setAnnulId(seance.id);
+    try {
+      await api.post(`/semaines/${id}/annuler-seance/`, { seance_id: seance.id });
+      toast.success(`Séance annulée : ${seance.ue_code} (${seance.jour_display}).`);
+      // Une annulation libère un créneau → on rafraîchit aussi les récupérables.
+      await Promise.all([loadSeances(), loadImpactees(), loadRecuperables()]);
+    } catch (err) {
+      toast.error(extractApiError(err, "Échec de l'annulation."));
+    } finally { setAnnulId(null); }
+  };
+
+  const placerCours = async (cours, sugg) => {
+    setApplyId(`${cours.demande_id}-${sugg.jour}-${sugg.creneau}`);
+    try {
+      await api.post(`/semaines/${id}/placer-cours/`, {
+        demande_id: cours.demande_id, jour: sugg.jour,
+        creneau: sugg.creneau, salle_id: sugg.salle_id,
+      });
+      toast.success(`Cours placé : ${cours.ue}.`);
+      await Promise.all([loadSeances(), loadImpactees(), loadRecuperables()]);
+    } catch (err) {
+      toast.error(extractApiError(err, 'Impossible de placer ce cours (conflit ?).'));
+    } finally { setApplyId(null); }
+  };
 
   // ── Actions de workflow (ouvrir / clôturer / générer / publier) ────────
   const handleWorkflow = async (key) => {
@@ -147,6 +193,8 @@ export default function Planning() {
     try {
       await api.patch(`/seances/${seanceId}/`, { jour, creneau });
       toast.success('Séance déplacée.');
+      loadImpactees();
+      loadRecuperables();
     } catch (err) {
       setSeances(prev => prev.map(s => (s.id === seanceId ? ancienne : s)));
       setMoveError(extractApiError(err, 'Déplacement refusé.'));
@@ -157,6 +205,8 @@ export default function Planning() {
   const handleEditSave = async (patch) => {
     await api.patch(`/seances/${editSeance.id}/`, patch);  // throw si refus → modale reste ouverte
     await loadSeances();
+    loadImpactees();
+    loadRecuperables();
     toast.success('Séance modifiée avec succès.');
   };
 
@@ -343,6 +393,93 @@ export default function Planning() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Séances impactées par une absence (Phase C) */}
+      {!loading && impactees.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-warning/30 bg-warning/5 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle size={16} className="text-warning" />
+            <p className="text-sm font-bold text-ink dark:text-ink-dark">
+              {impactees.length} séance(s) impactée(s) par une absence
+            </p>
+          </div>
+          <p className="text-xs text-ink-muted dark:text-ink-dark-muted mb-3">
+            L'enseignant est désormais indisponible à ces créneaux. Déplacez la séance
+            (glisser-déposer ou clic dans la grille) ou annulez-la — le créneau libéré
+            pourra être réutilisé. Rien n'est modifié sans votre action.
+          </p>
+          <div className="space-y-2">
+            {impactees.map((s) => (
+              <div key={s.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-line dark:border-line-dark bg-white dark:bg-surface-dark px-3.5 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold text-ink-strong dark:text-ink-dark-strong">
+                    {s.ue_code} <span className="text-ink-muted dark:text-ink-dark-muted font-medium">· {s.type_cours_display ?? s.type_cours}</span>
+                  </p>
+                  <p className="text-[11.5px] text-ink-muted dark:text-ink-dark-muted">
+                    {s.filiere_libelle ?? s.ue_intitule} · {s.enseignant_nom} · {s.jour_display} {s.creneau_display} · {s.salle_nom}
+                  </p>
+                </div>
+                <Button variant="danger" size="sm" disabled={annulId === s.id}
+                  onClick={() => annulerSeance(s)}>
+                  {annulId === s.id ? 'Annulation…' : 'Annuler'}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Cours récupérables dans l'espace libre (Phase D) */}
+      {!loading && recuperables.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-primary-200 dark:border-primary-800/50 bg-primary-50/40 dark:bg-primary-950/15 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Cpu size={16} className="text-primary-700 dark:text-primary-300" />
+            <p className="text-sm font-bold text-ink dark:text-ink-dark">
+              {recuperables.length} cours récupérable(s) dans l'espace libre
+            </p>
+          </div>
+          <p className="text-xs text-ink-muted dark:text-ink-dark-muted mb-3">
+            Ces cours n'étaient pas programmés et peuvent l'être maintenant (créneaux
+            libérés). Les <span className="font-semibold">vacataires</span> sont proposés en premier.
+          </p>
+          <div className="space-y-2">
+            {recuperables.map((c) => (
+              <div key={c.demande_id}
+                className="rounded-xl border border-line dark:border-line-dark bg-white dark:bg-surface-dark px-3.5 py-2.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-[13px] font-semibold text-ink-strong dark:text-ink-dark-strong">
+                    {c.ue} <span className="text-ink-muted dark:text-ink-dark-muted font-medium">· {c.type_cours}</span>
+                  </p>
+                  {c.vacataire && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200">
+                      Vacataire
+                    </span>
+                  )}
+                  <span className="text-[11.5px] text-ink-muted dark:text-ink-dark-muted">
+                    {c.classe} · {c.enseignant}
+                  </span>
+                </div>
+                <div className="mt-1.5 space-y-1.5">
+                  {c.suggestions.map((s, k) => {
+                    const key = `${c.demande_id}-${s.jour}-${s.creneau}`;
+                    return (
+                      <div key={k} className="flex items-center justify-between gap-2">
+                        <span className="text-[12px] text-primary-800 dark:text-primary-200">{s.label}</span>
+                        <Button size="sm" disabled={applyId === key} onClick={() => placerCours(c, s)}>
+                          {applyId === key ? '…' : 'Appliquer'}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Grille (visible une fois le planning généré) */}
       {!loading && planningPret && (

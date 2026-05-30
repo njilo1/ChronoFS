@@ -212,9 +212,16 @@ export default function Sidebar() {
       <nav className="flex-1 overflow-y-auto py-4 px-0 space-y-1 sidebar-scroll">
         <LayoutGroup id="sidebar-nav">
           {items.map((item, i) => {
+            // Entrée échelonnée au montage de la sidebar (une seule fois,
+            // à l'arrivée dans l'espace authentifié — pas à chaque navigation).
+            const reveal = {
+              initial: { opacity: 0, x: -10 },
+              animate: { opacity: 1, x: 0 },
+              transition: { duration: 0.34, delay: 0.06 + i * 0.045, ease: [0.22, 1, 0.36, 1] },
+            };
             if (item.type === 'sep') {
               return (
-                <div key={i} className={'pt-5 pb-1.5 ' + (open ? 'px-4' : 'px-2')}>
+                <motion.div key={i} {...reveal} className={'pt-5 pb-1.5 ' + (open ? 'px-4' : 'px-2')}>
                   {open ? (
                     <div className="flex items-center gap-2.5">
                       <span className="h-px flex-1 bg-white/10" />
@@ -226,10 +233,14 @@ export default function Sidebar() {
                   ) : (
                     <div className="h-px bg-white/10 mx-2" />
                   )}
-                </div>
+                </motion.div>
               );
             }
-            return <SidebarItem key={item.to} item={item} open={open} notchColor={notchColor} />;
+            return (
+              <motion.div key={item.to} {...reveal}>
+                <SidebarItem item={item} open={open} notchColor={notchColor} />
+              </motion.div>
+            );
           })}
         </LayoutGroup>
       </nav>
@@ -247,7 +258,6 @@ export default function Sidebar() {
                 {role === 'DAR' ? 'Div. Affaires Académiques' : 'Chef de Département'}
               </p>
             </div>
-            <p className="text-white/30 text-[9px] mt-2 font-mono tracking-wider">ChronoFS · v2.0</p>
           </>
         ) : (
           <span className="pulse-dot bg-gold-400" title="Connecté" />

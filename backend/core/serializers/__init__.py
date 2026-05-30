@@ -1,6 +1,11 @@
 """Réexport unifié des serializers FSChrono."""
 
-from .auth import LoginSerializer, MeSerializer
+from .auth import (
+    ChangePasswordSerializer,
+    LoginSerializer,
+    MeSerializer,
+    ProfilUpdateSerializer,
+)
 from .users import (
     ChefDeptCreateSerializer,
     ChefDeptSerializer,
@@ -24,11 +29,14 @@ from .imports import (
 )
 from .seances import SeanceEditSerializer, SeanceSerializer
 from .archives import ArchivePlanningSerializer
+from .notifications import NotificationSerializer
+from .disponibilites import IndisponibiliteSerializer
 
 
 __all__ = [
     # Auth
     'LoginSerializer', 'MeSerializer',
+    'ProfilUpdateSerializer', 'ChangePasswordSerializer',
     # Users
     'ChefDeptSerializer', 'ChefDeptCreateSerializer', 'ResetPasswordSerializer',
     # Référentiel
@@ -45,4 +53,8 @@ __all__ = [
     'SeanceSerializer', 'SeanceEditSerializer',
     # Archives
     'ArchivePlanningSerializer',
+    # Notifications
+    'NotificationSerializer',
+    # Disponibilités
+    'IndisponibiliteSerializer',
 ]

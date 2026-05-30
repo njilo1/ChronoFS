@@ -7,6 +7,7 @@ Serializers d'authentification.
 - MeSerializer     : représentation user pour /api/auth/me/.
 """
 
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -56,3 +57,59 @@ class LoginSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         data['user'] = MeSerializer(self.user).data
         return data
+
+
+class ProfilUpdateSerializer(serializers.ModelSerializer):
+    """
+    Modification par l'utilisateur de SON propre profil (PATCH /api/auth/me/).
+
+    Champs autorisés uniquement : identité et coordonnées. `role`,
+    `departement`, `is_active` et le mot de passe sont volontairement exclus
+    (le mot de passe a son endpoint dédié, le reste relève du DAR).
+    L'unicité de `username` est garantie par le modèle (validateur DRF).
+    """
+
+    class Meta:
+        model  = User
+        fields = ('username', 'first_name', 'last_name', 'email', 'telephone', 'grade')
+
+    def validate_username(self, value):
+        value = (value or '').strip()
+        if not value:
+            raise serializers.ValidationError("Le nom d'utilisateur ne peut pas être vide.")
+        return value
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """
+    Changement de mot de passe par l'utilisateur lui-même
+    (POST /api/auth/change-password/).
+
+    Vérifie l'ancien mot de passe, applique les validateurs Django au
+    nouveau, et exige une confirmation identique.
+    """
+
+    ancien_password      = serializers.CharField(write_only=True)
+    nouveau_password     = serializers.CharField(write_only=True)
+    confirmation         = serializers.CharField(write_only=True)
+
+    def validate_ancien_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Mot de passe actuel incorrect.")
+        return value
+
+    def validate_nouveau_password(self, value):
+        validate_password(value, self.context['request'].user)
+        return value
+
+    def validate(self, attrs):
+        if attrs['nouveau_password'] != attrs['confirmation']:
+            raise serializers.ValidationError(
+                {'confirmation': "La confirmation ne correspond pas au nouveau mot de passe."}
+            )
+        if attrs['nouveau_password'] == attrs['ancien_password']:
+            raise serializers.ValidationError(
+                {'nouveau_password': "Le nouveau mot de passe doit être différent de l'ancien."}
+            )
+        return attrs

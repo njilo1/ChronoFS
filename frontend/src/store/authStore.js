@@ -15,6 +15,9 @@ const useAuthStore = create(
       setTokens: (token, refresh) =>
         set({ token, refresh }),
 
+      setUser: (user) =>
+        set({ user }),
+
       logout: () =>
         set({ user: null, token: null, refresh: null, role: null }),
     }),

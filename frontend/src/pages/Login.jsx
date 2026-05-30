@@ -165,12 +165,12 @@ export default function Login() {
           ],
         }}
         transition={{
-          duration: 3.2, ease: 'easeInOut',
-          x: { duration: 3.2, ease: 'easeInOut', times: [0, 0.5, 1] },
-          y: { duration: 3.2, ease: 'easeInOut', times: [0, 0.5, 1] },
-          width:        { duration: 3.2, ease: 'easeInOut', times: [0, 0.14, 0.86, 1] },
-          height:       { duration: 3.2, ease: 'easeInOut', times: [0, 0.14, 0.86, 1] },
-          borderRadius: { duration: 3.2, ease: 'easeInOut', times: [0, 0.14, 0.86, 1] },
+          duration: 1.5, ease: 'easeInOut',
+          x: { duration: 1.5, ease: 'easeInOut', times: [0, 0.5, 1] },
+          y: { duration: 1.5, ease: 'easeInOut', times: [0, 0.5, 1] },
+          width:        { duration: 1.5, ease: 'easeInOut', times: [0, 0.14, 0.86, 1] },
+          height:       { duration: 1.5, ease: 'easeInOut', times: [0, 0.14, 0.86, 1] },
+          borderRadius: { duration: 1.5, ease: 'easeInOut', times: [0, 0.14, 0.86, 1] },
         }}
         style={{
           position: 'absolute',
@@ -199,12 +199,12 @@ export default function Login() {
           ],
         }}
         transition={{
-          duration: 3.2, ease: 'easeInOut',
-          x: { duration: 3.2, ease: 'easeInOut', times: [0, 0.5, 1] },
-          y: { duration: 3.2, ease: 'easeInOut', times: [0, 0.5, 1] },
-          width:        { duration: 3.2, ease: 'easeInOut', times: [0, 0.14, 0.86, 1] },
-          height:       { duration: 3.2, ease: 'easeInOut', times: [0, 0.14, 0.86, 1] },
-          borderRadius: { duration: 3.2, ease: 'easeInOut', times: [0, 0.14, 0.86, 1] },
+          duration: 1.5, ease: 'easeInOut',
+          x: { duration: 1.5, ease: 'easeInOut', times: [0, 0.5, 1] },
+          y: { duration: 1.5, ease: 'easeInOut', times: [0, 0.5, 1] },
+          width:        { duration: 1.5, ease: 'easeInOut', times: [0, 0.14, 0.86, 1] },
+          height:       { duration: 1.5, ease: 'easeInOut', times: [0, 0.14, 0.86, 1] },
+          borderRadius: { duration: 1.5, ease: 'easeInOut', times: [0, 0.14, 0.86, 1] },
         }}
         style={{
           position: 'absolute',
