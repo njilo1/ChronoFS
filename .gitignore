@@ -25,6 +25,11 @@ staticfiles/
 # Migrations générées localement uniquement (on commit les migrations officielles)
 # (rien ici — les migrations sont versionnées)
 
+# ── Outils / éditeurs locaux ─────────────────────────────────
+.claude/
+.idea/
+.vscode/
+
 # ── Variables d'environnement ────────────────────────────────
 .env
 .env.local

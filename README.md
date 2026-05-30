@@ -5,7 +5,7 @@ Progressive Web App de génération automatique d'emplois du temps pour la
 
 > 🚧 **Branche en cours de refonte** — `refactor/v2-clean`
 > Toute la documentation détaillée (architecture, conventions, modèle métier)
-> est dans [`CLAUDE.md`](./CLAUDE.md). Le README complet (installation,
+> est dans [`ARCHITECTURE.md`](./ARCHITECTURE.md). Le README complet (installation,
 > identifiants de test, scripts) sera produit en fin de refactoring (Phase 10).
 
 ## Stack
@@ -41,7 +41,7 @@ API : http://localhost:8000/api/  ·  UI : http://localhost:5173
 
 ## Documentation
 
-- [`CLAUDE.md`](./CLAUDE.md) — guide architectural détaillé
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — guide architectural détaillé
 - [`docs/references/`](./docs/references/) — templates Excel et PDF officiels UEB
 - [`docs/archives/`](./docs/archives/) — anciens documents de contexte (v1)
 - [`docs/Manuel_Utilisateur_ChronoFS.docx`](./docs/Manuel_Utilisateur_ChronoFS.docx) — manuel utilisateur v1

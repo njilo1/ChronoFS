@@ -1,6 +1,6 @@
-# CLAUDE.md
+# Architecture & conventions — ChronoFS
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guide technique du projet : architecture, modèle métier, conventions et règles de gestion.
 
 ## Présentation
 
