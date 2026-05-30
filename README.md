@@ -28,7 +28,7 @@ python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 cp ../.env.example ../.env  # éditer les valeurs
 python manage.py migrate
-python manage.py seed_demo  # données de test (disponible Phase 1)
+python manage.py seed_demo  # données + comptes de test (dar/dar123, chef_tic/tic123…)
 python manage.py runserver
 
 # Frontend (nouveau terminal)
