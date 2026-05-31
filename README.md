@@ -1,13 +1,7 @@
 # FSChrono v2
 
 Progressive Web App de génération automatique d'emplois du temps pour la
-**Faculté des Sciences de l'Université d'Ébolowa (FS-UEB)**, Cameroun.
-
-> 🚧 **Branche en cours de refonte** — `refactor/v2-clean`
-> Toute la documentation détaillée (architecture, conventions, modèle métier)
-> est dans [`ARCHITECTURE.md`](./ARCHITECTURE.md). Le README complet (installation,
-> identifiants de test, scripts) sera produit en fin de refactoring (Phase 10).
-
+**Faculté des Sciences de l'Université d'Ébolowa (FS-UEB)**
 ## Stack
 
 | Couche | Technologie |
