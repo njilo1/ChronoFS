@@ -22,7 +22,7 @@ const GRADES = ['DR','PR','M','MME','ING'];
 const GRADE_LABELS = { DR: 'Dr', PR: 'Pr', M: 'M.', MME: 'Mme', ING: 'Ing.' };
 const STATUTS = ['PERMANENT', 'VACATAIRE'];
 const STATUT_LABELS = { PERMANENT: 'Permanent', VACATAIRE: 'Vacataire' };
-const BLANK = { nom: '', grade: 'DR', statut: 'PERMANENT', departements: [], actif: true };
+const BLANK = { nom: '', grade: 'DR', statut: 'PERMANENT', matricule: '', departements: [], actif: true };
 
 const COLS = [
   { key: 'grade', label: 'Grade', render: r => (
@@ -31,6 +31,11 @@ const COLS = [
     </span>
   )},
   { key: 'nom', label: 'Nom complet', render: r => <span className="font-semibold text-ink-strong dark:text-ink-dark-strong">{r.nom}</span> },
+  { key: 'identifiant', label: 'Identifiant', render: r => (
+    r.matricule
+      ? <span className="font-mono text-[12px] font-semibold text-ink-strong dark:text-ink-dark-strong">{r.matricule}</span>
+      : <span className="font-mono text-[11px] text-ink-subtle italic" title="Référence interne (pas de matricule officiel)">{r.identifiant ?? '—'}</span>
+  )},
   { key: 'statut', label: 'Type', render: r => (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${r.statut === 'VACATAIRE' ? 'bg-gold-100 text-gold-700 border-gold-200' : 'bg-surface-alt text-ink-muted border-line'}`}>
       {STATUT_LABELS[r.statut] ?? r.statut ?? 'Permanent'}
@@ -70,7 +75,7 @@ export default function Enseignants() {
 
   const openCreate = () => { setForm(BLANK); setModal({ open: true, item: null }); };
   const openEdit   = (item) => {
-    setForm({ nom: item.nom, grade: item.grade, statut: item.statut ?? 'PERMANENT', departements: (item.departements ?? []).map(d => d.id ?? d), actif: item.actif });
+    setForm({ nom: item.nom, grade: item.grade, statut: item.statut ?? 'PERMANENT', matricule: item.matricule ?? '', departements: (item.departements ?? []).map(d => d.id ?? d), actif: item.actif });
     setModal({ open: true, item });
   };
 
@@ -86,7 +91,9 @@ export default function Enseignants() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      modal.item ? await update(modal.item.id, form) : await create(form);
+      // Un vacataire n'a pas de matricule : on n'envoie le champ que pour un permanent.
+      const payload = { ...form, matricule: form.statut === 'PERMANENT' ? (form.matricule || '').trim() : '' };
+      modal.item ? await update(modal.item.id, payload) : await create(payload);
       setModal({ open: false, item: null });
     } catch {
       /* toast d'erreur déjà affiché par useCrud ; on garde la modale ouverte */
@@ -149,6 +156,19 @@ export default function Enseignants() {
           <input className={iCls} value={form.nom} placeholder="Nom de l'enseignant"
             onChange={e => setForm({ ...form, nom: e.target.value })} />
         </F>
+        {form.statut === 'PERMANENT' ? (
+          <F label="Matricule">
+            <input className={`${iCls} font-mono`} value={form.matricule}
+              placeholder="0777888A — 7 chiffres + 1 lettre"
+              maxLength={8}
+              onChange={e => setForm({ ...form, matricule: e.target.value.toUpperCase() })} />
+          </F>
+        ) : (
+          <div className="text-[12px] text-ink-muted bg-surface-subtle border border-line rounded-xl px-3 py-2.5 leading-relaxed">
+            Les vacataires n'ont pas de matricule officiel : un identifiant interne
+            (ex. <span className="font-mono font-semibold">VAC-0007</span>) leur est attribué automatiquement.
+          </div>
+        )}
         <F label="Départements">
           <div className="grid grid-cols-2 gap-1.5 p-3 bg-surface-subtle rounded-xl border border-line max-h-36 overflow-y-auto">
             {deps.map(d => (

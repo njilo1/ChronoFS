@@ -9,8 +9,11 @@ Pattern adopté :
   toucher au champ FK.
 """
 
+import re
+
 from rest_framework import serializers
 
+from core.constants import StatutEnseignant
 from core.models import (
     AnneeAcademique,
     Campus,
@@ -62,10 +65,17 @@ class SalleSerializer(serializers.ModelSerializer):
 class DepartementSerializer(serializers.ModelSerializer):
     nb_filieres    = serializers.IntegerField(source='filieres.count',    read_only=True)
     nb_enseignants = serializers.IntegerField(source='enseignants.count', read_only=True)
+    chef_nom       = serializers.ReadOnlyField()           # « Grade NOM » ou ''
+    chef_id        = serializers.SerializerMethodField()
 
     class Meta:
         model  = Departement
-        fields = ('id', 'code', 'nom', 'nb_filieres', 'nb_enseignants')
+        fields = ('id', 'code', 'nom', 'chef_id', 'chef_nom',
+                  'nb_filieres', 'nb_enseignants')
+
+    def get_chef_id(self, obj) -> int | None:
+        chef = obj.chef
+        return chef.id if chef else None
 
 
 class FiliereSerializer(serializers.ModelSerializer):
@@ -124,11 +134,13 @@ class EnseignantSerializer(serializers.ModelSerializer):
     statut_display     = serializers.CharField(source='get_statut_display', read_only=True)
     departements_codes = serializers.SerializerMethodField()
     nom_complet        = serializers.SerializerMethodField()
+    identifiant        = serializers.ReadOnlyField()  # matricule OU réf. interne VAC-xxxx
 
     class Meta:
         model  = Enseignant
         fields = (
             'id', 'nom', 'grade', 'grade_display', 'nom_complet',
+            'matricule', 'identifiant',
             'statut', 'statut_display',
             'departements', 'departements_codes', 'actif',
         )
@@ -138,6 +150,30 @@ class EnseignantSerializer(serializers.ModelSerializer):
 
     def get_nom_complet(self, obj) -> str:
         return f'{obj.get_grade_display()} {obj.nom}'
+
+    def validate(self, attrs):
+        """Règle métier matricule ↔ statut.
+
+        - Permanent : matricule OBLIGATOIRE et au format 7 chiffres + 1 lettre.
+        - Vacataire : pas de matricule (champ laissé vide → identifiant VAC-xxxx).
+        """
+        statut    = attrs.get('statut',    getattr(self.instance, 'statut', None))
+        matricule = attrs.get('matricule', getattr(self.instance, 'matricule', None))
+        matricule = (matricule or '').strip() or None
+
+        if statut == StatutEnseignant.PERMANENT:
+            if not matricule:
+                raise serializers.ValidationError(
+                    {'matricule': "Le matricule est obligatoire pour un enseignant permanent."})
+            if not re.match(r'^\d{7}[A-Za-z]$', matricule):
+                raise serializers.ValidationError(
+                    {'matricule': "Format attendu : 7 chiffres suivis d'une lettre (ex. 0777888A)."})
+        elif statut == StatutEnseignant.VACATAIRE and matricule:
+            raise serializers.ValidationError(
+                {'matricule': "Un vacataire ne possède pas de matricule officiel ; laissez ce champ vide."})
+
+        attrs['matricule'] = matricule
+        return attrs
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
