@@ -26,6 +26,11 @@ const COLS = [
     </span>
   )},
   { key: 'nom', label: 'Département' },
+  { key: 'chef_nom', label: 'Chef de département', render: r => (
+    r.chef_nom
+      ? <span className="font-semibold text-ink-strong dark:text-ink-dark-strong">{r.chef_nom}</span>
+      : <span className="text-ink-subtle text-xs italic">Aucun chef désigné</span>
+  )},
 ];
 
 export default function Departements() {

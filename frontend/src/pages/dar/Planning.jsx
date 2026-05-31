@@ -52,7 +52,6 @@ export default function Planning() {
 
   const [semaine, setSemaine] = useState(null);
   const [seances, setSeances] = useState([]);
-  const [taux, setTaux]       = useState([]);
   const [salles, setSalles]   = useState([]);
   const [enseignants, setEnseignants] = useState([]);
   const [ues, setUes]         = useState([]);
@@ -74,13 +73,6 @@ export default function Planning() {
   const loadSemaine = useCallback(async () => {
     const r = await api.get(`/semaines/${id}/`);
     setSemaine(r.data);
-  }, [id]);
-
-  const loadTaux = useCallback(async () => {
-    try {
-      const r = await api.get(`/semaines/${id}/taux-programmation/`);
-      setTaux(Array.isArray(r.data) ? r.data : (r.data.results ?? []));
-    } catch { /* non bloquant : le panneau reste simplement vide */ }
   }, [id]);
 
   const loadImpactees = useCallback(async () => {
@@ -114,10 +106,9 @@ export default function Planning() {
       setEnseignants(arr(en));
       setUes(arr(ue));
     }).finally(() => setLoading(false));
-    loadTaux();
     loadImpactees();
     loadRecuperables();
-  }, [id, loadTaux, loadImpactees, loadRecuperables]);
+  }, [id, loadImpactees, loadRecuperables]);
 
   const annulerSeance = async (seance) => {
     setAnnulId(seance.id);
@@ -150,7 +141,7 @@ export default function Planning() {
     setBusy(key);
     try {
       const { data } = await api.post(`/semaines/${id}/${key}/`);
-      await Promise.all([loadSemaine(), loadSeances(), loadTaux()]);
+      await Promise.all([loadSemaine(), loadSeances()]);
       if (key === 'generer') {
         const placees = data?.placees ?? 0;
         const nonPlacees = data?.non_placees?.length ?? 0;
@@ -322,42 +313,6 @@ export default function Planning() {
                 <span className="text-xs text-ink-subtle dark:text-ink-dark-subtle">Après génération</span>
               )}
             </WorkflowStep>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Taux de programmation par département */}
-      {!loading && taux.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-2xl p-5 shadow-card">
-          <div className="flex items-center gap-2 mb-4">
-            <Cpu size={14} className="text-primary-700 dark:text-primary-300" />
-            <h2 className="text-sm font-bold text-ink-strong dark:text-ink-dark-strong">
-              Taux de programmation par département
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {taux.map((t) => {
-              const couleur = t.taux >= 100 ? 'bg-success' : t.taux >= 60 ? 'bg-gold-500' : 'bg-danger';
-              return (
-                <div key={t.departement_id}
-                  className="border border-line dark:border-line-dark rounded-xl p-3.5 bg-surface-subtle dark:bg-surface-dark-alt">
-                  <div className="flex items-baseline justify-between gap-2 mb-2">
-                    <span className="text-sm font-semibold text-ink-strong dark:text-ink-dark-strong truncate" title={t.nom}>
-                      {t.code}
-                    </span>
-                    <span className="text-[13px] font-bold tabular-nums text-ink dark:text-ink-dark">
-                      {t.taux}% <span className="text-[11px] font-medium text-ink-subtle">({t.placees}/{t.total})</span>
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-surface-alt dark:bg-surface-dark rounded-full overflow-hidden">
-                    <motion.div className={`h-full rounded-full ${couleur}`}
-                      initial={{ width: 0 }} animate={{ width: `${Math.min(t.taux, 100)}%` }}
-                      transition={{ duration: 0.5, ease: 'easeOut' }} />
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </motion.div>
       )}

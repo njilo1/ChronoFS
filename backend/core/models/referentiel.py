@@ -13,14 +13,23 @@ villes = deux enregistrements `Filiere` distincts.
 
 import re
 
+from django.core.validators import RegexValidator
 from django.db import models
 
 from core.constants import (
     Grade,
     Niveau,
+    Role,
     StatutEnseignant,
     TypeSalle,
     Ville,
+)
+
+# Matricule officiel : 7 chiffres suivis d'une lettre (ex. 0777888A).
+MATRICULE_REGEX = r'^\d{7}[A-Za-z]$'
+valider_matricule = RegexValidator(
+    MATRICULE_REGEX,
+    "Format de matricule invalide : 7 chiffres suivis d'une lettre (ex. 0777888A).",
 )
 
 
@@ -70,6 +79,24 @@ class Departement(models.Model):
         verbose_name        = 'Département'
         verbose_name_plural = 'Départements'
         ordering            = ['code']
+
+    @property
+    def chef(self):
+        """Chef de département (premier compte CHEF_DEPT rattaché), ou None.
+
+        Un département est caractérisé par son chef ; la relation vit côté
+        `User.departement` (related_name='chefs').
+        """
+        return self.chefs.filter(role=Role.CHEF_DEPT).first()
+
+    @property
+    def chef_nom(self) -> str:
+        """Nom affichable du chef (« Grade NOM »), ou '' si aucun chef."""
+        c = self.chef
+        if not c:
+            return ''
+        nom = (c.last_name or c.first_name or c.username).strip()
+        return f'{c.get_grade_display()} {nom}'.strip() if c.grade else nom
 
     def __str__(self):
         return f'{self.code} — {self.nom}'
@@ -161,6 +188,16 @@ class Enseignant(models.Model):
 
     nom          = models.CharField(max_length=100)
     grade        = models.CharField(max_length=10, choices=Grade.choices)
+    # Matricule officiel : uniquement pour les PERMANENTS (7 chiffres + 1 lettre).
+    # Les vacataires n'en ont pas → champ NULL ; ils sont identifiés par une
+    # référence interne générée (cf. propriété `identifiant`).
+    matricule    = models.CharField(
+        max_length=8,
+        blank=True, null=True, unique=True,
+        validators=[valider_matricule],
+        help_text="Matricule officiel des permanents : 7 chiffres + 1 lettre (ex. 0777888A). "
+                  "Laisser vide pour les vacataires.",
+    )
     statut       = models.CharField(
         max_length=12,
         choices=StatutEnseignant.choices,
@@ -184,6 +221,30 @@ class Enseignant(models.Model):
         # On évite les doublons exacts (même grade + même nom).
         unique_together     = ('nom', 'grade')
         ordering            = ['nom']
+
+    @property
+    def identifiant(self) -> str:
+        """Identifiant unique lisible de l'enseignant.
+
+        - Permanent : son matricule officiel (ex. 0777888A).
+        - Vacataire (sans matricule) : référence interne générée à partir de
+          l'id technique (ex. VAC-0007), toujours unique.
+        - Permanent dont le matricule n'est pas encore saisi : référence
+          interne « ENS-xxxx » (cas de données héritées à compléter).
+        """
+        if self.matricule:
+            return self.matricule
+        if not self.pk:
+            return ''
+        prefixe = 'VAC' if self.statut == StatutEnseignant.VACATAIRE else 'ENS'
+        return f'{prefixe}-{self.pk:04d}'
+
+    def save(self, *args, **kwargs):
+        # Normalise la chaîne vide en NULL : sinon plusieurs '' violeraient
+        # la contrainte d'unicité du matricule (un seul '' autorisé).
+        if not self.matricule:
+            self.matricule = None
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.get_grade_display()} {self.nom}'
