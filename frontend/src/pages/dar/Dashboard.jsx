@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  RadialBarChart, RadialBar, PolarAngleAxis, Legend, Cell,
+  PieChart, Pie, Cell,
 } from 'recharts';
 import api from '../../services/api';
 import Badge from '../../components/ui/Badge';
@@ -219,40 +219,29 @@ export default function DarDashboard() {
         >
           <div className="mb-2">
             <p className="text-sm font-bold text-ink">Taux d'occupation par département</p>
-            <p className="text-xs text-ink-muted mt-0.5">Un anneau par département · cette semaine</p>
+            <p className="text-xs text-ink-muted mt-0.5">Cours placés par département · cette semaine</p>
           </div>
           {taux ? (
             <>
-              {/* La carte garde une zone de 240 px ; le graphe est dessiné ×2
-                  par-dessus (overflow visible) pour un cercle plus grand. */}
               <div className="relative h-[240px]">
-                <div className="absolute inset-0 origin-center scale-[2]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadialBarChart
-                      data={taux.depts}
-                      innerRadius="32%" outerRadius="100%"
-                      startAngle={90} endAngle={-270} barSize={11}
-                    >
-                      <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                      <RadialBar background={{ fill: '#EEF1F6' }} dataKey="taux" cornerRadius={6}>
-                        {taux.depts.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                      </RadialBar>
-                      <Tooltip content={<OccupationTooltip />} />
-                      <Legend
-                        iconType="circle" iconSize={6} layout="vertical" align="right" verticalAlign="middle"
-                        wrapperStyle={{ fontSize: '6px' }}
-                        formatter={(v, entry) => (
-                          <span style={{ color: '#6B7280', fontWeight: 600 }}>
-                            {v} <span style={{ color: '#9CA3AF' }}>· {entry?.payload?.taux ?? 0}%</span>
-                          </span>
-                        )}
-                      />
-                    </RadialBarChart>
-                  </ResponsiveContainer>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={taux.depts} dataKey="placees" nameKey="name" cx="50%" cy="50%"
+                      innerRadius={58} outerRadius={88} paddingAngle={3} animationDuration={900}
+                      label={({ name }) => name} labelLine={false}
+                      stroke={isDark ? '#111827' : '#FFFFFF'} strokeWidth={2}>
+                      {taux.depts.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                    </Pie>
+                    <Tooltip content={<OccupationTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Taux global affiché au centre de l'anneau */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-2xl font-bold text-primary-700">{taux.global}%</span>
+                  <span className="text-[10px] text-ink-muted uppercase tracking-wider">global</span>
                 </div>
               </div>
               <p className="text-xs text-ink-muted text-center mt-1">
-                <span className="font-bold text-primary-700">{taux.global}%</span> global ·{' '}
                 {taux.complets}/{taux.nbDepts} départements complets
               </p>
             </>
