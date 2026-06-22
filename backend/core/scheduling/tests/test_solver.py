@@ -282,20 +282,24 @@ class SolverTests(_SolverTestBase):
 
     # 7 ───────────────────────────────────────────────────────────────────────
     def test_tp_force_salle_adaptee(self):
-        """type_cours=TP → exclut COURS classique, accepte LABO/TP/MULTIMEDIA."""
+        """TP générique (hors SBAA) → exclut COURS, accepte TP/MULTIMEDIA.
+
+        Le LABO et le TERRAIN ne sont plus des salles de TP « génériques » :
+        ils sont réservés au département SBAA (cf. test_sbaa_terrain_et_labo).
+        """
         salle_cours = Salle.objects.create(
-            nom='A',    campus=self.campus_eb, capacite=50, type_salle=TypeSalle.COURS,
+            nom='A',  campus=self.campus_eb, capacite=50, type_salle=TypeSalle.COURS,
         )
-        salle_labo = Salle.objects.create(
-            nom='Labo', campus=self.campus_eb, capacite=50, type_salle=TypeSalle.LABO,
+        salle_tp = Salle.objects.create(
+            nom='TP', campus=self.campus_eb, capacite=50, type_salle=TypeSalle.TP,
         )
         imp = self._import()
         d = self._demande(import_source=imp, type_cours=TypeCours.TP)
 
-        result = self._solve([d], [salle_cours, salle_labo])
+        result = self._solve([d], [salle_cours, salle_tp])
 
         self.assertEqual(len(result.placements), 1)
-        self.assertEqual(result.placements[0].salle_id, salle_labo.id)
+        self.assertEqual(result.placements[0].salle_id, salle_tp.id)
 
     # 8 ───────────────────────────────────────────────────────────────────────
     def test_enseignant_multi_creneaux(self):
@@ -552,3 +556,150 @@ class SolverTests(_SolverTestBase):
         self.assertIn(b_c0.id, places, "La filière la moins programmée doit passer.")
         self.assertIn(a_c1.id, places)
         self.assertNotIn(a_c0.id, places)
+
+    # 17 ──────────────────────────────────────────────────────────────────────
+    def test_sbaa_terrain_et_labo(self):
+        """
+        Règle métier SBAA :
+        - un TP « ordinaire » (ex. pratique agricole) → TERRAIN ;
+        - un TP dont l'intitulé contient « chimie »     → LABO ;
+        - un TP d'un AUTRE département ne va JAMAIS sur le terrain/labo.
+        """
+        dept_sbaa = Departement.objects.create(
+            nom='Sciences Biologiques et Agronomie Appliquée', code='SBAA',
+        )
+        fil_sbaa = Filiere.objects.create(
+            code='SBAA', niveau=Niveau.L1, ville=Ville.EBOLOWA,
+            nom='SBAA L1', departement=dept_sbaa, effectif=40,
+        )
+        ue_agri  = UE.objects.create(code='SB101', intitule='Pratique agricole', filiere=fil_sbaa)
+        ue_chim  = UE.objects.create(code='SB102', intitule='TP de Chimie minérale', filiere=fil_sbaa)
+
+        terrain = Salle.objects.create(
+            nom='Terrain', campus=self.campus_eb, capacite=10, type_salle=TypeSalle.TERRAIN,
+        )
+        labo = Salle.objects.create(
+            nom='Labo', campus=self.campus_eb, capacite=50, type_salle=TypeSalle.LABO,
+        )
+        salle_tp = Salle.objects.create(
+            nom='TP', campus=self.campus_eb, capacite=50, type_salle=TypeSalle.TP,
+        )
+        imp = self._import()
+
+        # TP agricole → terrain (jamais labo/TP)
+        d_agri = self._demande(import_source=imp, filiere=fil_sbaa, ue=ue_agri,
+                               type_cours=TypeCours.TP, creneau=Creneau.C0)
+        # TP de chimie → labo
+        d_chim = self._demande(import_source=imp, filiere=fil_sbaa, ue=ue_chim,
+                               type_cours=TypeCours.TP, creneau=Creneau.C1)
+
+        result = self._solve([d_agri, d_chim], [terrain, labo, salle_tp])
+        aff = {p.demande_id: p.salle_id for p in result.placements}
+        self.assertEqual(aff.get(d_agri.id), terrain.id, "Le TP agricole doit aller sur le terrain.")
+        self.assertEqual(aff.get(d_chim.id), labo.id, "Le TP de chimie doit aller au labo.")
+
+    # 18 ──────────────────────────────────────────────────────────────────────
+    def test_terrain_partage_plusieurs_filieres(self):
+        """
+        Le terrain accueille PLUSIEURS filières SBAA au même créneau
+        (capacité illimitée, pas d'unicité salle/créneau).
+        """
+        dept_sbaa = Departement.objects.create(
+            nom='Sciences Biologiques et Agronomie Appliquée', code='SBAA',
+        )
+        f1 = Filiere.objects.create(
+            code='SBAA', niveau=Niveau.L1, ville=Ville.EBOLOWA,
+            nom='SBAA L1', departement=dept_sbaa, effectif=40,
+        )
+        f2 = Filiere.objects.create(
+            code='SBAA', niveau=Niveau.L2, ville=Ville.EBOLOWA,
+            nom='SBAA L2', departement=dept_sbaa, effectif=35,
+        )
+        ue1 = UE.objects.create(code='SB1', intitule='Pratique agricole', filiere=f1)
+        ue2 = UE.objects.create(code='SB2', intitule='Diverses activités agricoles', filiere=f2)
+        terrain = Salle.objects.create(
+            nom='Terrain', campus=self.campus_eb, capacite=10, type_salle=TypeSalle.TERRAIN,
+        )
+        imp = self._import()
+        # Les DEUX filières au MÊME créneau, un seul terrain disponible.
+        d1 = self._demande(import_source=imp, filiere=f1, ue=ue1,
+                           type_cours=TypeCours.TP, creneau=Creneau.C0)
+        d2 = self._demande(import_source=imp, filiere=f2, ue=ue2,
+                           type_cours=TypeCours.TP, creneau=Creneau.C0)
+
+        result = self._solve([d1, d2], [terrain])
+
+        # Les deux sont placées, sur le MÊME terrain, au même créneau.
+        self.assertEqual(len(result.placements), 2)
+        self.assertTrue(all(p.salle_id == terrain.id for p in result.placements))
+
+    # 19 ──────────────────────────────────────────────────────────────────────
+    def test_terrain_interdit_hors_sbaa(self):
+        """Un TP d'un département non-SBAA ne peut PAS être placé sur le terrain."""
+        terrain = Salle.objects.create(
+            nom='Terrain', campus=self.campus_eb, capacite=10, type_salle=TypeSalle.TERRAIN,
+        )
+        imp = self._import()
+        # Filière par défaut = département TST, type TP → terrain seul disponible.
+        d = self._demande(import_source=imp, type_cours=TypeCours.TP, creneau=Creneau.C0)
+
+        result = self._solve([d], [terrain])
+
+        self.assertEqual(len(result.placements), 0, "Un TP hors SBAA ne va jamais sur le terrain.")
+        self.assertEqual(len(result.non_places), 1)
+
+    # 20 ──────────────────────────────────────────────────────────────────────
+    def test_continuite_salle_meme_journee(self):
+        """
+        Une classe avec deux cours consécutifs le même jour reste dans LA
+        MÊME salle (continuité) plutôt que d'être déplacée inutilement —
+        alors que deux salles équivalentes sont disponibles.
+        """
+        salle_m = Salle.objects.create(
+            nom='M', campus=self.campus_eb, capacite=40, type_salle=TypeSalle.COURS,
+        )
+        salle_n = Salle.objects.create(
+            nom='N', campus=self.campus_eb, capacite=40, type_salle=TypeSalle.COURS,
+        )
+        imp = self._import()
+        # Même filière (par défaut), même jour, créneaux consécutifs C0 puis C1.
+        d_c0 = self._demande(import_source=imp, creneau=Creneau.C0, effectif=30)
+        d_c1 = self._demande(import_source=imp, creneau=Creneau.C1, effectif=30)
+
+        result = self._solve([d_c0, d_c1], [salle_m, salle_n])
+
+        self.assertEqual(len(result.placements), 2)
+        salles_utilisees = {p.salle_id for p in result.placements}
+        self.assertEqual(len(salles_utilisees), 1,
+                         "La classe doit rester dans la même salle d'un créneau au suivant.")
+
+    # 21 ──────────────────────────────────────────────────────────────────────
+    def test_continuite_cede_si_salle_occupee(self):
+        """
+        La continuité est un objectif SOUPLE : si garder la même salle est
+        impossible (déjà prise par une autre filière au 2e créneau), la
+        classe est quand même placée ailleurs — placer le cours prime.
+        """
+        salle_m = Salle.objects.create(
+            nom='M', campus=self.campus_eb, capacite=40, type_salle=TypeSalle.COURS,
+        )
+        salle_n = Salle.objects.create(
+            nom='N', campus=self.campus_eb, capacite=40, type_salle=TypeSalle.COURS,
+        )
+        f_b = Filiere.objects.create(
+            code='TSTB', niveau=Niveau.L3, ville=Ville.EBOLOWA,
+            nom='TST B', departement=self.dept, effectif=30,
+        )
+        ue_b = UE.objects.create(code='TSTB301', intitule='UE B', filiere=f_b)
+        imp = self._import()
+        # Filière A : deux créneaux consécutifs.
+        a0 = self._demande(import_source=imp, creneau=Creneau.C0, effectif=30)
+        a1 = self._demande(import_source=imp, creneau=Creneau.C1, effectif=30)
+        # Filière B : un cours à C1 → occupe une des deux salles ce créneau.
+        b1 = self._demande(import_source=imp, filiere=f_b, ue=ue_b,
+                           creneau=Creneau.C1, effectif=30)
+
+        result = self._solve([a0, a1, b1], [salle_m, salle_n])
+
+        # Les 3 cours sont placés (placement prime sur la continuité).
+        self.assertEqual(len(result.placements), 3)

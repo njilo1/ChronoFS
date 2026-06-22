@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import useThemeStore from '../../store/themeStore';
+import { EASE_OUT } from '../../lib/motion';
 
 /**
  * PageShell — en-tête de page éditorial.
@@ -37,7 +38,7 @@ export default function PageShell({
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0  }}
-        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.32, ease: EASE_OUT }}
         className="flex items-end justify-between gap-4 flex-wrap pb-4"
         style={{ borderBottom: `1px solid ${ruleColor}` }}
       >
@@ -99,7 +100,7 @@ export default function PageShell({
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0  }}
-        transition={{ duration: 0.4, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.4, delay: 0.08, ease: EASE_OUT }}
         className="space-y-5"
       >
         {children}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, Plus, Play, Lock, Cpu, Globe, Download, FileText, Eye } from 'lucide-react';
+import { Calendar, Plus, Play, Lock, Cpu, Globe, Download, FileText, Eye, Trash2, AlertTriangle } from 'lucide-react';
 import api from '../../services/api';
 import { toast } from '../../store/toastStore';
 import { extractApiError } from '../../services/apiError';
@@ -62,6 +62,8 @@ export default function Semaines() {
   const [busy, setBusy]         = useState(null);
   const [resolution, setResolution] = useState(null);
   const [resolWeek, setResolWeek]   = useState(null);
+  const [confirmDel, setConfirmDel] = useState(null);   // semaine à supprimer
+  const [deleting, setDeleting]     = useState(false);
   const isDark = useThemeStore((s) => s.theme === 'dark');
   const navigate = useNavigate();
 
@@ -90,6 +92,20 @@ export default function Semaines() {
     } catch (err) {
       toast.error(extractApiError(err));
     } finally { setSaving(false); }
+  };
+
+  // Suppression d'une semaine (et de toutes ses données) — repartir de zéro.
+  const handleDelete = async () => {
+    if (!confirmDel) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/semaines/${confirmDel.id}/`);
+      setConfirmDel(null);
+      await load();
+      toast.success('Semaine supprimée.');
+    } catch (err) {
+      toast.error(extractApiError(err, "La suppression a échoué. Réessayez."));
+    } finally { setDeleting(false); }
   };
 
   // Libellés de succès par action de workflow.
@@ -144,7 +160,7 @@ export default function Semaines() {
   };
 
   return (
-    <div className="space-y-5 max-w-4xl">
+    <div className="space-y-5 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
@@ -153,7 +169,7 @@ export default function Semaines() {
             <Calendar size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-2xl flex items-center gap-2.5" style={{ color: isDark ? '#F5F4EE' : '#0B1220' }}>
+            <h1 className="heading-display text-3xl flex items-center gap-2.5" style={{ color: isDark ? '#F5F4EE' : '#0B1220' }}>
               Semaines
               {!loading && (
                 <span className="text-[11px] font-bold text-ink-muted dark:text-ink-dark-muted bg-surface-alt dark:bg-surface-dark-alt border border-line dark:border-line-dark px-2.5 py-1 rounded-full">
@@ -189,6 +205,8 @@ export default function Semaines() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
+                whileHover={{ y: -3, transition: { type: 'spring', stiffness: 300, damping: 22 } }}
+                whileTap={{ scale: 0.995 }}
                 onClick={() => navigate(`/dar/semaines/${sw.id}/planning`)}
                 role="button"
                 title="Ouvrir le détail de la semaine"
@@ -236,6 +254,14 @@ export default function Semaines() {
                         </Button>
                       );
                     })}
+                    {/* Suppression : toujours disponible, pour repartir de zéro. */}
+                    <Button size="sm" variant="ghost"
+                      title="Supprimer cette semaine"
+                      aria-label="Supprimer cette semaine"
+                      className="!px-2 hover:!text-danger"
+                      onClick={() => setConfirmDel(sw)}>
+                      <Trash2 size={13} />
+                    </Button>
                   </div>
                 </div>
               </motion.div>
@@ -287,6 +313,45 @@ export default function Semaines() {
         semaineId={resolWeek}
         onApplied={load}
       />
+
+      {/* Confirmation de suppression — action destructive et irréversible. */}
+      <Modal open={!!confirmDel} onClose={() => !deleting && setConfirmDel(null)}
+        title="Supprimer la semaine">
+        {confirmDel && (
+          <div className="space-y-4">
+            <div className="flex gap-3 p-3.5 rounded-xl bg-danger/5 border border-danger/30">
+              <AlertTriangle size={18} className="text-danger shrink-0 mt-0.5" />
+              <div className="text-sm text-ink dark:text-ink-dark">
+                <p className="font-semibold text-ink-strong dark:text-ink-dark-strong">
+                  Cette action est irréversible.
+                </p>
+                <p className="mt-1 text-ink-muted dark:text-ink-dark-muted">
+                  La semaine <span className="font-semibold">du {fmtDate(confirmDel.date_debut)} au {fmtDate(confirmDel.date_fin)}</span> sera supprimée,
+                  ainsi que <span className="font-semibold">tous ses imports, demandes de cours, séances et archives</span> (fichiers Excel et PDF compris).
+                </p>
+              </div>
+            </div>
+
+            {confirmDel.statut === 'PUBLIE' && (
+              <p className="text-xs text-warning bg-warning/10 border border-warning/30 rounded-lg px-3 py-2">
+                ⚠️ Cette semaine est <strong>publiée</strong> : les chefs de département n'y auront plus accès.
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="secondary" size="sm"
+                onClick={() => setConfirmDel(null)} disabled={deleting}>
+                Annuler
+              </Button>
+              <Button variant="danger" size="sm"
+                onClick={handleDelete} disabled={deleting}>
+                <Trash2 size={13} />
+                {deleting ? 'Suppression…' : 'Supprimer définitivement'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

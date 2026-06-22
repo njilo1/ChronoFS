@@ -9,6 +9,7 @@
 // Si `onMove` et `onEdit` sont absents → grille lecture seule (vue chef).
 
 import { useRef } from 'react';
+import { motion } from 'framer-motion';
 import {
   DndContext,
   PointerSensor,
@@ -151,7 +152,12 @@ export default function GrilleEDT({ seances = [], onMove, onEdit }) {
     : undefined;
 
   const tableau = (
-    <div className="overflow-x-auto rounded-xl border border-line shadow-card bg-white">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="overflow-x-auto rounded-xl border border-line shadow-card bg-white"
+    >
       <table className="w-full text-xs border-collapse">
         <thead>
           <tr className="bg-primary-50 border-b border-line">
@@ -200,7 +206,7 @@ export default function GrilleEDT({ seances = [], onMove, onEdit }) {
           })}
         </tbody>
       </table>
-    </div>
+    </motion.div>
   );
 
   if (!interactif) return tableau;

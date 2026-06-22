@@ -1,5 +1,6 @@
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
+import { SPRING } from '../../lib/motion';
 
 export default function Button({
   children, variant = 'primary', size = 'md', className, ...props
@@ -8,7 +9,7 @@ export default function Button({
     <motion.button
       whileHover={{ y: props.disabled ? 0 : -1 }}
       whileTap={{   scale: props.disabled ? 1 : 0.97 }}
-      transition={{ type: 'spring', stiffness: 420, damping: 22 }}
+      transition={SPRING.tap}
       className={clsx(
         'inline-flex items-center justify-center gap-1.5 font-semibold rounded-md',
         'transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed',

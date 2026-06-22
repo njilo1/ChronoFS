@@ -71,7 +71,7 @@ export default function Imports() {
   const semaine = semaines.find(s => String(s.id) === selected);
 
   return (
-    <div className="space-y-5 max-w-5xl">
+    <div className="space-y-5 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
@@ -80,7 +80,7 @@ export default function Imports() {
             <Upload size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-2xl" style={{ color: isDark ? '#F5F4EE' : '#0B1220' }}>Suivi des imports</h1>
+            <h1 className="heading-display text-3xl" style={{ color: isDark ? '#F5F4EE' : '#0B1220' }}>Suivi des imports</h1>
             <p className="text-sm mt-0.5" style={{ color: isDark ? '#A1A6B0' : '#5B6573' }}>Fichiers déposés par les chefs de département</p>
           </div>
         </motion.div>
@@ -148,7 +148,8 @@ export default function Imports() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                className={`bg-white border rounded-2xl p-4 shadow-card ${cfg.bg}`}
+                whileHover={{ y: -3, transition: { type: 'spring', stiffness: 300, damping: 22 } }}
+                className={`bg-white border rounded-2xl p-4 shadow-card hover:shadow-card-md transition-shadow ${cfg.bg}`}
               >
                 {/* Top */}
                 <div className="flex items-start justify-between mb-3">

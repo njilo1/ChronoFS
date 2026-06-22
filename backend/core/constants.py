@@ -82,31 +82,64 @@ class TypeCours(models.TextChoices):
 
 
 # ── Compatibilité TypeCours ↔ TypeSalle ──────────────────────────────────────
-# Contrainte H6 du solver : un TP doit se faire dans un labo/multimédia/TP,
-# un CM dans une salle de cours ou un amphi, etc. Le TERRAIN est universel
-# (sport / activités spéciales) — accepté pour tous les types.
+# Contrainte H6 du solver : un TP « ordinaire » se fait dans un TP/multimédia,
+# un CM dans une salle de cours ou un amphi, etc.
+#
+# Le TERRAIN et le LABO sont des salles SPÉCIALES qui ne sont JAMAIS choisies
+# par défaut (un cours de TIC n'a rien à faire sur un terrain). Elles sont
+# réservées au seul département SBAA, et uniquement pour ses TP, via la règle
+# `salle_speciale_requise()` ci-dessous :
+#   • TP SBAA dont l'intitulé contient « chimie » → LABO (1 classe/créneau) ;
+#   • autre TP SBAA                               → TERRAIN (plusieurs classes
+#                                                   simultanément possibles).
+# C'est pourquoi ni TERRAIN ni LABO n'apparaissent dans les listes générales.
 SALLES_AUTORISEES_PAR_TYPE_COURS: dict[str, list[str]] = {
     TypeCours.CM: [
-        TypeSalle.COURS, TypeSalle.AMPHI, TypeSalle.MULTIMEDIA,
-        TypeSalle.TERRAIN, TypeSalle.BUREAU,
+        TypeSalle.COURS, TypeSalle.AMPHI, TypeSalle.MULTIMEDIA, TypeSalle.BUREAU,
     ],
     TypeCours.TD: [
-        TypeSalle.COURS, TypeSalle.AMPHI, TypeSalle.MULTIMEDIA,
-        TypeSalle.BUREAU, TypeSalle.TERRAIN,
+        TypeSalle.COURS, TypeSalle.AMPHI, TypeSalle.MULTIMEDIA, TypeSalle.BUREAU,
     ],
     TypeCours.TP: [
-        TypeSalle.TP, TypeSalle.MULTIMEDIA, TypeSalle.LABO,
-        TypeSalle.TERRAIN,
+        TypeSalle.TP, TypeSalle.MULTIMEDIA,
     ],
     TypeCours.SEMINAIRE: [
-        TypeSalle.COURS, TypeSalle.AMPHI, TypeSalle.MULTIMEDIA,
-        TypeSalle.TERRAIN, TypeSalle.BUREAU,
+        TypeSalle.COURS, TypeSalle.AMPHI, TypeSalle.MULTIMEDIA, TypeSalle.BUREAU,
     ],
     TypeCours.PROJET: [
-        TypeSalle.TP, TypeSalle.MULTIMEDIA, TypeSalle.LABO,
-        TypeSalle.COURS, TypeSalle.TERRAIN,
+        TypeSalle.TP, TypeSalle.MULTIMEDIA, TypeSalle.COURS,
     ],
 }
+
+
+# ── Salles spéciales SBAA (terrain / laboratoire) ────────────────────────────
+# Seul ce département envoie ses TP au terrain (et au labo pour la chimie).
+CODE_DEPARTEMENT_SALLES_SPECIALES = 'SBAA'
+# Mot-clé cherché dans l'intitulé de l'UE pour router un TP SBAA vers le labo
+# au lieu du terrain (insensible à la casse).
+MOT_CLE_LABO = 'chimie'
+
+
+def salle_speciale_requise(
+    code_departement: str | None,
+    type_cours: str | None,
+    intitule_ue: str | None,
+) -> str | None:
+    """Type de salle imposé pour les cas spéciaux SBAA, sinon None.
+
+    Renvoie :
+        TypeSalle.LABO     → TP SBAA dont l'intitulé contient « chimie » ;
+        TypeSalle.TERRAIN  → tout autre TP SBAA ;
+        None               → cas ordinaire (salle classique selon
+                             SALLES_AUTORISEES_PAR_TYPE_COURS).
+    """
+    if code_departement != CODE_DEPARTEMENT_SALLES_SPECIALES:
+        return None
+    if type_cours != TypeCours.TP:
+        return None
+    if MOT_CLE_LABO in (intitule_ue or '').lower():
+        return TypeSalle.LABO
+    return TypeSalle.TERRAIN
 
 
 # ── Semestres ────────────────────────────────────────────────────────────────

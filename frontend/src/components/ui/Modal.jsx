@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import Button from './Button';
+import { SPRING } from '../../lib/motion';
 
 /**
  * Modal — Portal + wrapper flex pour centrage.
@@ -72,7 +73,7 @@ export default function Modal({
               initial={{ opacity: 0, y: 24, scale: 0.96 }}
               animate={{ opacity: 1, y: 0,  scale: 1    }}
               exit={{    opacity: 0, y: 10, scale: 0.96 }}
-              transition={{ type: 'spring', stiffness: 440, damping: 32 }}
+              transition={SPRING.surface}
               role="dialog"
               aria-modal="true"
               className="w-full max-w-[460px] max-h-[90vh] bg-surface dark:bg-surface-dark border border-line dark:border-line-dark rounded-md shadow-card-lg flex flex-col overflow-hidden"

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
@@ -11,6 +11,16 @@ import useThemeStore from '../../store/themeStore';
 export default function Layout() {
   const location = useLocation();
   const theme    = useThemeStore((s) => s.theme);
+  const mainRef  = useRef(null);
+
+  // Au changement de route : ramène le contenu en haut et déplace le focus sur
+  // la zone principale (navigation clavier / lecteurs d'écran).
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    el.scrollTo({ top: 0, left: 0 });
+    el.focus({ preventScroll: true });
+  }, [location.pathname]);
 
   // Synchronisation theme ↔ classe `.dark` sur <html>.
   // Le useEffect garantit que la classe DOM suit toujours l'état du store
@@ -27,7 +37,7 @@ export default function Layout() {
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto p-8 bg-paper">
+        <main ref={mainRef} tabIndex={-1} className="flex-1 overflow-y-auto p-8 bg-paper focus:outline-none">
           <div className="max-w-[1400px] mx-auto">
             <AnimatePresence mode="wait">
               <PageTransition key={location.pathname}>

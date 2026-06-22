@@ -79,6 +79,8 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #3D4A6B; }
     font-weight: 600;
     letter-spacing: -0.01em;
     line-height: 1.05;
+    font-feature-settings: 'liga' 1, 'dlig' 1, 'kern' 1;
+    font-optical-sizing: auto;
   }
   .heading-display em {
     font-style: italic;
@@ -158,6 +160,21 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #3D4A6B; }
   }
   html.dark .row-rule::before { background: #C9A227; }
   .row-rule:hover::before { transform: scaleY(1); }
+
+  /* — Focus clavier des actions de ligne (boutons icônes des tables).
+       Anneau navy en clair, or en sombre — visible sans casser la sobriété. — */
+  .row-actions button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(46, 83, 145, 0.45);
+  }
+  html.dark .row-actions button:focus-visible {
+    box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.55);
+  }
+
+  /* — Survol de ligne premium : fine barre dorée à gauche (tables partagées) — */
+  .table-row > td:first-child { transition: box-shadow 0.2s ease; }
+  .table-row:hover > td:first-child { box-shadow: inset 3px 0 0 0 #A67E2E; }
+  html.dark .table-row:hover > td:first-child { box-shadow: inset 3px 0 0 0 #C9A227; }
 
   /* — Sidebar item active marker : barre or à gauche — */
   .nav-active-marker {
@@ -256,4 +273,26 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #3D4A6B; }
     background-image:
       linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 60%);
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Réduction de mouvement (prefers-reduced-motion).
+   framer-motion gère ses propres animations via <MotionConfig reducedMotion>
+   dans main.jsx. Ici on neutralise les animations CSS pures (shimmer,
+   dot-pulse) et les transitions décoratives, sans nuire à la lisibilité.
+   ───────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Skeleton : fond neutre fixe plutôt qu'un dégradé figé en cours de course. */
+  .skeleton           { background: #E1E1DA; }
+  html.dark .skeleton { background: #243153; }
+  /* Indicateur de statut : visible mais sans pulsation. */
+  .pulse-dot::after   { display: none; }
 }

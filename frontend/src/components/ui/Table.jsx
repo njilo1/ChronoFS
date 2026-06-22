@@ -147,7 +147,7 @@ export default function Table({
           {data.map((row, i) => (
             <motion.tr
               key={row.id ?? i}
-              className="group"
+              className="group table-row"
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: Math.min(i * 0.03, 0.45), ease: [0.22, 1, 0.36, 1] }}
@@ -176,7 +176,7 @@ export default function Table({
                     borderBottom: i === data.length - 1 ? 'none' : tdStyleBase.borderBottom,
                   }}
                 >
-                  <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="row-actions flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
                     {onToggle && (() => {
                       const actif = row[toggleField];
                       const ToggleIcon = actif ? PowerOff : Power;

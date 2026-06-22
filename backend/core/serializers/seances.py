@@ -11,6 +11,11 @@ Deux flavors :
 from django.utils import timezone
 from rest_framework import serializers
 
+from core.constants import (
+    SALLES_AUTORISEES_PAR_TYPE_COURS,
+    salle_speciale_requise,
+    TypeSalle,
+)
 from core.models import Seance
 
 
@@ -76,6 +81,7 @@ class SeanceEditSerializer(serializers.ModelSerializer):
         ue         = attrs.get('ue',         instance.ue)
         jour       = attrs.get('jour',       instance.jour)
         creneau    = attrs.get('creneau',    instance.creneau)
+        type_cours = attrs.get('type_cours', instance.type_cours)
 
         # Indisponibilité de l'enseignant au créneau visé (contrainte dure).
         if enseignant is not None:
@@ -109,9 +115,30 @@ class SeanceEditSerializer(serializers.ModelSerializer):
                 f"La salle {salle.nom} n'y appartient pas."
             })
 
+        # H6 — compatibilité type de salle ↔ cours. Les TP SBAA imposent terrain
+        # (ou labo pour la chimie) ; les autres cours ne peuvent JAMAIS aller
+        # sur un terrain ni dans un labo (cf. listes générales sans ces types).
+        if salle is not None:
+            type_special = salle_speciale_requise(
+                instance.filiere.departement.code, type_cours,
+                getattr(ue, 'intitule', None),
+            )
+            if type_special is not None:
+                if salle.type_salle != type_special:
+                    lieu = 'au laboratoire' if type_special == TypeSalle.LABO else 'sur le terrain'
+                    raise serializers.ValidationError({'detail':
+                        f"Ce TP de {instance.filiere} doit se tenir {lieu}."
+                    })
+            elif salle.type_salle not in SALLES_AUTORISEES_PAR_TYPE_COURS.get(type_cours, []):
+                raise serializers.ValidationError({'detail':
+                    f"La salle {salle.nom} n'accepte pas un cours de type {type_cours}."
+                })
+
         autres = Seance.objects.filter(semaine=instance.semaine).exclude(pk=instance.pk)
 
-        if autres.filter(salle=salle, jour=jour, creneau=creneau).exists():
+        # Le terrain est partageable (plusieurs filières SBAA au même créneau).
+        if (salle is not None and salle.type_salle != TypeSalle.TERRAIN
+                and autres.filter(salle=salle, jour=jour, creneau=creneau).exists()):
             raise serializers.ValidationError({'detail':
                 f"La salle {salle.nom} est déjà occupée le "
                 f"{Seance(jour=jour).get_jour_display()} "

@@ -192,6 +192,11 @@ class Seance(models.Model):
     creneau    = models.IntegerField(choices=Creneau.choices)
     type_cours = models.CharField(max_length=20, choices=TypeCours.choices)
 
+    # Salle « partageable » : un TERRAIN accueille plusieurs filières SBAA au
+    # même créneau. Ce drapeau (dérivé du type de salle) lève l'unicité
+    # salle/créneau ci-dessous uniquement pour ces séances.
+    salle_partageable = models.BooleanField(default=False)
+
     # Audit des modifications manuelles par le DAR
     modifie_manuellement = models.BooleanField(default=False)
     modifie_le           = models.DateTimeField(null=True, blank=True)
@@ -207,9 +212,12 @@ class Seance(models.Model):
         verbose_name_plural = 'Séances'
         ordering            = ['semaine', 'jour', 'creneau']
         constraints = [
-            # H1 — une salle ne peut accueillir qu'une seule séance par créneau.
+            # H1 — une salle ne peut accueillir qu'une seule séance par créneau,
+            # SAUF les salles partageables (terrain) où plusieurs filières SBAA
+            # cohabitent : la contrainte ne s'applique donc qu'à salle_partageable=False.
             models.UniqueConstraint(
                 fields=['semaine', 'salle', 'jour', 'creneau'],
+                condition=models.Q(salle_partageable=False),
                 name='seance_salle_unique',
             ),
             # H3 — une classe ne peut suivre qu'un seul cours par créneau.
@@ -218,6 +226,15 @@ class Seance(models.Model):
                 name='seance_filiere_unique',
             ),
         ]
+
+    def save(self, *args, **kwargs):
+        # Dérive le drapeau de partage depuis le type de salle (création
+        # unitaire et modifications manuelles du DAR). NB : bulk_create ne
+        # passe pas par save() → la génération le positionne explicitement.
+        from core.constants import TypeSalle
+        if self.salle_id:
+            self.salle_partageable = (self.salle.type_salle == TypeSalle.TERRAIN)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return (

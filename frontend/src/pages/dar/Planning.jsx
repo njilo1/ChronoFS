@@ -228,7 +228,7 @@ export default function Planning() {
             <LayoutGrid size={16} className="text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-2xl" style={{ color: isDark ? '#F5F4EE' : '#0B1220' }}>Planning</h1>
+            <h1 className="heading-display text-3xl" style={{ color: isDark ? '#F5F4EE' : '#0B1220' }}>Planning</h1>
             {semaine && (
               <p className="text-sm mt-0.5 flex items-center gap-2 flex-wrap" style={{ color: isDark ? '#A1A6B0' : '#5B6573' }}>
                 Du {fmtDate(semaine.date_debut)} au {fmtDate(semaine.date_fin)}

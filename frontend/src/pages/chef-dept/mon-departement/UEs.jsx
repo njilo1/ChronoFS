@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, BookOpen } from 'lucide-react';
 import { useCrud } from '../../../hooks/useCrud';
 import { askConfirm } from '../../../store/confirmStore';
-import api from '../../../services/api';
+import { fetchAll } from '../../../services/fetchAll';
 import PageShell from '../../../components/ui/PageShell';
 import Table from '../../../components/ui/Table';
 import Button from '../../../components/ui/Button';
@@ -44,8 +44,8 @@ export default function ChefUEs() {
   const [search, setSearch]     = useState('');
 
   useEffect(() => {
-    api.get('/mon-departement/filieres/')
-      .then(r => setFilieres(Array.isArray(r.data) ? r.data : (r.data.results ?? [])))
+    fetchAll('/mon-departement/filieres/')
+      .then(list => setFilieres(list))
       .catch(() => setFilieres([]));
   }, []);
 

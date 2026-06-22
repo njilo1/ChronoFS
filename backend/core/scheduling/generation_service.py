@@ -19,7 +19,7 @@ from __future__ import annotations
 from django.db import transaction
 from django.utils import timezone
 
-from core.constants import Creneau, Jour, StatutSemaine
+from core.constants import Creneau, Jour, StatutSemaine, TypeSalle
 from core.models import DemandeCours, Salle, Seance, Semaine
 from core.scheduling.solver import PlanningSolver, ResultatPlanification
 from core.services.disponibilites import creneaux_bloques
@@ -109,10 +109,14 @@ def generer_planning(semaine: Semaine, time_limit_sec: float = 30.0) -> dict:
     # ── 5. Créer les Seance correspondantes ──────────────────────────────────
     # On indexe les demandes par id pour reconstruire chaque Seance.
     demandes_par_id = {d.id: d for d in demandes}
+    # bulk_create ne déclenche pas Seance.save() : on dérive ici le drapeau
+    # de partage (terrain) à partir du type de salle attribué.
+    salles_par_id = {s.id: s for s in salles}
 
     seances_a_creer = []
     for placement in resultat.placements:
         d = demandes_par_id[placement.demande_id]
+        salle = salles_par_id[placement.salle_id]
         seances_a_creer.append(Seance(
             semaine          = semaine,
             demande_origine  = d,
@@ -123,6 +127,7 @@ def generer_planning(semaine: Semaine, time_limit_sec: float = 30.0) -> dict:
             jour             = d.jour,
             creneau          = d.creneau,
             type_cours       = d.type_cours,
+            salle_partageable = (salle.type_salle == TypeSalle.TERRAIN),
         ))
     Seance.objects.bulk_create(seances_a_creer)
 

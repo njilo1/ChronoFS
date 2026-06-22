@@ -97,15 +97,30 @@ Chaque app expose : `models.py` → `serializers.py` → `views.py` (ModelViewSe
 ```
 **Tolérance de sur-effectif (forçage)** : faute de salle idéale libre, une salle peut être remplie jusqu'à `capacité × (1 + TOLERANCE_SURCAPACITE)`, soit **+40 %** (ex. une salle de 50 places monte à ~70). Constante `TOLERANCE_SURCAPACITE` dans `core/constants.py`. Le solver pénalise ce forçage (`FACTEUR_SURCHARGE`) pour ne l'utiliser qu'en dernier recours.
 
+### Salles spéciales : terrain et laboratoire (réservés au département SBAA)
+Le `TERRAIN` et le `LABO` ne sont **jamais** choisis pour un cours ordinaire (un cours de TIC n'a rien à faire sur un terrain). Ils sont réservés aux **TP du seul département `SBAA`**, selon la fonction `salle_speciale_requise()` dans `core/constants.py` :
+
+| Cours | Salle imposée |
+|---|---|
+| TP `SBAA`, intitulé d'UE **contenant « chimie »** (insensible à la casse) | **`LABO`** — 1 filière par créneau (capacité normale) |
+| TP `SBAA`, **autre intitulé** (pratique agricole, etc.) | **`TERRAIN`** — capacité illimitée, **plusieurs filières SBAA simultanément** |
+| Tout le reste (autres départements, CM/TD/séminaire/projet, TP non-SBAA) | Salles classiques uniquement (`SALLES_AUTORISEES_PAR_TYPE_COURS`, qui **exclut** terrain et labo) |
+
+Conséquences techniques :
+- **H2 ne s'applique pas au `TERRAIN`** (partage entre filières) ; le `LABO` garde l'unicité salle/créneau.
+- Le drapeau dénormalisé `Seance.salle_partageable` (dérivé du type de salle) lève la contrainte d'unicité BD `seance_salle_unique` pour les seules séances en terrain. Positionné par `Seance.save()` et explicitement à la génération (`bulk_create` ne passe pas par `save()`).
+- Mêmes règles appliquées aux **modifications manuelles** du DAR (`views/semaines.py`, `serializers/seances.py`) : impossible de poser à la main un cours non-SBAA sur le terrain/labo.
+- Le code du département concerné est `CODE_DEPARTEMENT_SALLES_SPECIALES = 'SBAA'` et le mot-clé labo `MOT_CLE_LABO = 'chimie'` (`core/constants.py`). Limites actuelles du référentiel : un seul `LABO` (Ébolowa, 25 places), aucun à Monatélé.
+
 ### Conflits enseignant
 Un enseignant dans plusieurs départements est **normal** — pas un conflit. Conflit = **même enseignant + même jour + même heure_debut** dans le même `EmploiDuTemps`.
 
 ### Algorithme de génération (`core/scheduling/solver.py`, OR-Tools CP-SAT)
 Le chef IMPOSE jour + créneau dans son fichier Excel ; le solver choisit **uniquement la salle** de chaque `DemandeCours` (variables booléennes `x[d, s]`).
 
-**Contraintes dures** (jamais violées) : H1 ≤ 1 salle/demande · H2 ≤ 1 cours par (salle, jour, créneau) · H3 ≤ 1 cours par (enseignant, jour, créneau) · H4 ≤ 1 cours par (filière, jour, créneau) · H5 capacité avec tolérance de sur-effectif (+40 %, cf. ci-dessus) · H6 type de salle compatible avec le type de cours · H7 ville salle = ville filière · H7bis campus imposé (`campus_obligatoire`) respecté · **H8 un enseignant n'enseigne que dans UNE ville par jour** (pas d'aller-retour inter-villes, quel que soit l'écart de créneaux) · **H9 une filière (classe) reste dans UN SEUL campus pour toute la semaine** (pas de saut de campus, même en même ville).
+**Contraintes dures** (jamais violées) : H1 ≤ 1 salle/demande · H2 ≤ 1 cours par (salle, jour, créneau) · H3 ≤ 1 cours par (enseignant, jour, créneau) · H4 ≤ 1 cours par (filière, jour, créneau) · H5 capacité avec tolérance de sur-effectif (+40 %, cf. ci-dessus) · H6 type de salle compatible avec le type de cours (dont salles spéciales SBAA terrain/labo, cf. ci-dessus) · H7 ville salle = ville filière · H7bis campus imposé (`campus_obligatoire`) respecté · **H8 un enseignant n'enseigne que dans UNE ville par jour** (pas d'aller-retour inter-villes, quel que soit l'écart de créneaux) · **H9 une filière (classe) reste dans UN SEUL campus pour toute la semaine** (pas de saut de campus, même en même ville).
 
-**Objectif** (lexicographique, poids `w1 ≫ w2 ≫ w3 ≫ w4`) : 1) maximiser le **nombre de cours placés** (« tous les cours de la semaine doivent être faits ») ; 2) **priorité aux vacataires** (`statut = VACATAIRE`) ; 3) **équité** — à nombre de cours égal, sacrifier d'abord les filières les plus programmées ; 4) ajuster **capacité ≈ effectif** (minimiser gaspillage et forçage).
+**Objectif** (lexicographique, poids `w1 ≫ w2 ≫ w3 ≫ w_cont ≫ w_cap`) : 1) maximiser le **nombre de cours placés** (« tous les cours de la semaine doivent être faits ») ; 2) **priorité aux vacataires** (`statut = VACATAIRE`) ; 3) **équité** — à nombre de cours égal, sacrifier d'abord les filières les plus programmées ; 4) **continuité de salle** — minimiser le nombre de salles distinctes par `(filière)` sur la semaine : une classe garde la même salle d'un créneau au suivant et d'un jour à l'autre, on ne la déplace que si c'est inévitable (variables `u[(filière, salle)]`, cf. `_construire_objectif`) ; 5) ajuster **capacité ≈ effectif** (minimiser gaspillage et forçage). La continuité passe **avant** l'ajustement de capacité : on préfère garder la classe dans sa salle plutôt que de la déménager pour gagner quelques places.
 
 **Pipeline** : `POST /api/semaines/<id>/generer/` → régénère les `Seance` en base → renvoie les cours non plaçables avec raisons lisibles (jamais « infeasible » brut) → DAR publie via `POST /api/semaines/<id>/publier/` → export PDF/DOCX. Taux de programmation par département : `GET /api/semaines/<id>/taux-programmation/`.
 

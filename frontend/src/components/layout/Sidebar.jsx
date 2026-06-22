@@ -60,6 +60,7 @@ function SidebarItem({ item, open, notchColor }) {
       title={!open ? item.label : undefined}
       className={
         'group relative flex items-center text-[13px] outline-none ' +
+        'focus-visible:ring-2 focus-visible:ring-gold-400/70 focus-visible:ring-inset ' +
         (open
           ? 'gap-3 pl-3 pr-5 py-2 h-9 ml-2 mr-0 rounded-l-md'
           : 'justify-center w-11 h-11 mx-auto rounded-md')

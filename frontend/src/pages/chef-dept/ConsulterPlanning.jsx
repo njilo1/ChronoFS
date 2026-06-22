@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { LayoutGrid, Download, Calendar } from 'lucide-react';
 import api from '../../services/api';
+import { fetchAll } from '../../services/fetchAll';
 import { toast } from '../../store/toastStore';
 import { extractApiError } from '../../services/apiError';
 import PageShell from '../../components/ui/PageShell';
@@ -34,9 +35,8 @@ export default function ConsulterPlanning() {
   const [busy, setBusy]                 = useState(false);
 
   useEffect(() => {
-    api.get('/semaines/')
-      .then(res => {
-        const list = Array.isArray(res.data) ? res.data : (res.data.results ?? []);
+    fetchAll('/semaines/')
+      .then(list => {
         setSemaines(list);
         const courante = list.find(s => s.statut === 'PUBLIE') ?? list.find(s => s.statut === 'GENERE') ?? list[0];
         if (courante) setSelected(String(courante.id));
@@ -45,12 +45,13 @@ export default function ConsulterPlanning() {
   }, []);
 
   // L'endpoint /api/semaines/<id>/seances/ filtre déjà côté backend pour un
-  // chef : il ne reçoit que les séances de son département.
+  // chef : il ne reçoit que les séances de son département. On récupère TOUTES
+  // les pages, sinon un planning de plus de 20 séances s'afficherait tronqué.
   useEffect(() => {
     if (!selected) return;
     setLoadingPlan(true);
-    api.get(`/semaines/${selected}/seances/`)
-      .then(res => setSeances(Array.isArray(res.data) ? res.data : (res.data.results ?? [])))
+    fetchAll(`/semaines/${selected}/seances/`)
+      .then(list => setSeances(list))
       .catch(() => setSeances([]))
       .finally(() => setLoadingPlan(false));
   }, [selected]);
@@ -154,7 +155,7 @@ export default function ConsulterPlanning() {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: (ci * 6 + j.idx) * 0.015 }}
-                            className="mb-1 last:mb-0 bg-primary-50 border border-primary-200 rounded-xl p-1.5">
+                            className="mb-1 last:mb-0 bg-primary-50 border border-primary-200 rounded-xl p-1.5 hover:border-primary-300 hover:bg-primary-100/60 transition-colors">
                             <p className="font-bold text-primary-800 truncate leading-tight">
                               {s.ue_code ?? '—'}
                             </p>

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Upload, CheckCircle, AlertCircle, FileSpreadsheet, FileUp } from 'lucide-react';
 import api from '../../../services/api';
+import { fetchAll } from '../../../services/fetchAll';
 import { toast } from '../../../store/toastStore';
 import PageShell from '../../../components/ui/PageShell';
 import Button from '../../../components/ui/Button';
@@ -48,9 +49,8 @@ export default function ChefImport() {
   // elle qui sera transmise à tous les endpoints backend qui exigent
   // `?semaine=<id>` (template, preview, dépôt).
   useEffect(() => {
-    api.get('/semaines/')
-      .then(r => {
-        const list = Array.isArray(r.data) ? r.data : (r.data.results ?? []);
+    fetchAll('/semaines/')
+      .then(list => {
         const active = list.find(s => s.statut === 'IMPORTS_OUVERTS')
                      ?? list.find(s => s.statut === 'DRAFT')
                      ?? list[0];

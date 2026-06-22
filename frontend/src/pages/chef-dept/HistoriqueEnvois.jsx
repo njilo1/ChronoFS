@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { History, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '../../services/api';
+import { fetchAll } from '../../services/fetchAll';
 import { toast } from '../../store/toastStore';
 import { extractApiError } from '../../services/apiError';
 import PageShell from '../../components/ui/PageShell';
@@ -17,8 +18,8 @@ export default function HistoriqueEnvois() {
   const [busy, setBusy]         = useState(null);
 
   useEffect(() => {
-    api.get('/imports/mine/')
-      .then(res => setImports(Array.isArray(res.data) ? res.data : (res.data.results ?? [])))
+    fetchAll('/imports/mine/')
+      .then(list => setImports(list))
       .catch(() => setImports([]))
       .finally(() => setLoading(false));
   }, []);
@@ -65,7 +66,8 @@ export default function HistoriqueEnvois() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.045 }}
-                className="bg-white border border-line rounded-2xl shadow-card overflow-hidden"
+                whileHover={{ y: -2, transition: { type: 'spring', stiffness: 300, damping: 24 } }}
+                className="bg-white border border-line rounded-2xl shadow-card overflow-hidden hover:shadow-card-md hover:border-primary-200 transition-all"
               >
                 <div className="flex items-center justify-between px-5 py-4 gap-4">
                   <div className="flex items-center gap-3 min-w-0">
