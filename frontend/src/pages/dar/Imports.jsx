@@ -14,11 +14,11 @@ const fmtDt = (d) => d ? new Date(d).toLocaleString('fr-FR', { day: '2-digit', m
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '—';
 
 const STATUS_CONFIG = {
-  OK:           { icon: CheckCircle,  color: 'text-success',  bg: 'bg-success/10 border-success/25',   label: 'Reçu' },
-  AVEC_ERREURS: { icon: AlertCircle,  color: 'text-warning',  bg: 'bg-warning/10 border-warning/25',   label: 'Avec erreurs' },
-  ECHEC:        { icon: XCircle,      color: 'text-danger',   bg: 'bg-danger/10 border-danger/25',     label: 'Échec' },
-  EN_ATTENTE:   { icon: Clock,        color: 'text-ink-muted', bg: 'bg-surface-alt border-line',       label: 'En attente' },
-  EN_COURS:     { icon: RefreshCw,    color: 'text-primary-700', bg: 'bg-primary-50 border-primary-200', label: 'En cours' },
+  OK:           { icon: CheckCircle,  color: 'text-success dark:text-emerald-300',  bg: 'bg-success/10 border-success/25 dark:bg-success/15 dark:border-success/30',   label: 'Reçu' },
+  AVEC_ERREURS: { icon: AlertCircle,  color: 'text-warning dark:text-amber-300',  bg: 'bg-warning/10 border-warning/25 dark:bg-warning/15 dark:border-warning/30',   label: 'Avec erreurs' },
+  ECHEC:        { icon: XCircle,      color: 'text-danger dark:text-red-300',   bg: 'bg-danger/10 border-danger/25 dark:bg-danger/15 dark:border-danger/30',     label: 'Échec' },
+  EN_ATTENTE:   { icon: Clock,        color: 'text-ink-muted dark:text-ink-dark-muted', bg: 'bg-surface-alt border-line dark:bg-surface-dark-alt dark:border-line-dark',       label: 'En attente' },
+  EN_COURS:     { icon: RefreshCw,    color: 'text-primary-700 dark:text-primary-300', bg: 'bg-primary-50 border-primary-200 dark:bg-primary-950/30 dark:border-primary-800/60', label: 'En cours' },
 };
 
 export default function Imports() {
@@ -80,8 +80,8 @@ export default function Imports() {
             <Upload size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="heading-display text-3xl" style={{ color: isDark ? '#F5F4EE' : '#0B1220' }}>Suivi des imports</h1>
-            <p className="text-sm mt-0.5" style={{ color: isDark ? '#A1A6B0' : '#5B6573' }}>Fichiers déposés par les chefs de département</p>
+            <h1 className="heading-display text-3xl" style={{ color: isDark ? '#F5F4EE' : '#1C2333' }}>Suivi des imports</h1>
+            <p className="text-sm mt-0.5" style={{ color: isDark ? '#A1A6B0' : '#667085' }}>Fichiers déposés par les chefs de département</p>
           </div>
         </motion.div>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
@@ -93,7 +93,7 @@ export default function Imports() {
 
       {/* Sélecteur semaine */}
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
-        className="bg-white border border-line rounded-xl p-4 shadow-card flex items-center gap-3">
+        className="bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-xl p-4 shadow-card flex items-center gap-3">
         <Calendar size={15} className="text-primary-700 shrink-0" />
         {loadingSem ? <div className="skeleton h-5 rounded w-64" /> : (
           <select className="flex-1 bg-transparent text-sm text-ink focus:outline-none"
@@ -114,8 +114,8 @@ export default function Imports() {
       {selected && !loadingImp && total > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
           className="flex items-center justify-between flex-wrap gap-3 px-1">
-          <p className="text-sm text-ink-muted">
-            <span className="font-bold text-ink">{recu.length}</span> / {total} département{total > 1 ? 's' : ''} ont déposé leur fichier
+          <p className="text-sm text-ink-muted dark:text-ink-dark-muted">
+            <span className="font-bold text-ink dark:text-ink-dark">{recu.length}</span> / {total} département{total > 1 ? 's' : ''} ont déposé leur fichier
           </p>
           {semaine && <Badge status={semaine.statut} />}
         </motion.div>
@@ -123,7 +123,7 @@ export default function Imports() {
 
       {/* Grille cards */}
       {!selected ? (
-        <div className="bg-white border border-line rounded-2xl shadow-card py-16 text-center text-ink-muted text-sm">
+        <div className="bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-2xl shadow-card py-16 text-center text-ink-muted dark:text-ink-dark-muted text-sm">
           Sélectionnez une semaine pour voir les imports.
         </div>
       ) : loadingImp ? (
@@ -132,7 +132,7 @@ export default function Imports() {
         </div>
       ) : imports.length === 0 ? (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="bg-white border border-line rounded-2xl shadow-card py-16 text-center text-ink-muted text-sm">
+          className="bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-2xl shadow-card py-16 text-center text-ink-muted dark:text-ink-dark-muted text-sm">
           Aucun import pour cette semaine.
         </motion.div>
       ) : (
@@ -149,12 +149,12 @@ export default function Imports() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
                 whileHover={{ y: -3, transition: { type: 'spring', stiffness: 300, damping: 22 } }}
-                className={`bg-white border rounded-2xl p-4 shadow-card hover:shadow-card-md transition-shadow ${cfg.bg}`}
+                className={`bg-white dark:bg-surface-dark border rounded-2xl p-4 shadow-card hover:shadow-card-md transition-shadow ${cfg.bg}`}
               >
                 {/* Top */}
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold bg-primary-50 text-primary-800 border border-primary-200">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold bg-primary-50 dark:bg-primary-950/40 text-primary-800 dark:text-primary-200 border border-primary-200 dark:border-primary-800/60">
                       {imp.departement_code ?? '—'}
                     </span>
                   </div>
@@ -165,18 +165,18 @@ export default function Imports() {
                 </div>
 
                 {/* Nom */}
-                <p className="text-sm font-semibold text-ink leading-tight truncate mb-1">
+                <p className="text-sm font-semibold text-ink dark:text-ink-dark leading-tight truncate mb-1">
                   {imp.departement_nom ?? 'Département'}
                 </p>
 
                 {/* Infos */}
                 {fmtDt(imp.uploaded_at) && (
-                  <p className="text-xs text-ink-muted">
+                  <p className="text-xs text-ink-muted dark:text-ink-dark-muted">
                     Déposé le {fmtDt(imp.uploaded_at)}
                   </p>
                 )}
                 {nbUes != null && (
-                  <p className="text-xs text-ink-muted">
+                  <p className="text-xs text-ink-muted dark:text-ink-dark-muted">
                     {nbUes} UE{nbUes > 1 ? 's' : ''}
                     {nbErr > 0 ? ` · ${nbErr} erreur${nbErr > 1 ? 's' : ''}` : ''}
                   </p>

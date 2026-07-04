@@ -18,7 +18,7 @@ import { staggerContainer, staggerItem } from '../../lib/motion';
 
 const NIVEAUX = ['L1', 'L2', 'L3', 'M1', 'M2'];
 const GRADE_LABELS = { DR: 'Dr', PR: 'Pr', M: 'M.', MME: 'Mme', ING: 'Ing.' };
-const PIE_COLORS = ['#1E3A8A', '#2563EB', '#3B82F6', '#60A5FA', '#06B6D4'];
+const PIE_COLORS = ['#143894', '#2563EB', '#3B82F6', '#60A5FA', '#06B6D4'];
 
 function arr(r) { return Array.isArray(r.data) ? r.data : (r.data?.results ?? []); }
 
@@ -253,16 +253,16 @@ export default function ChefDashboard() {
   ).map(([grade, value]) => ({ name: GRADE_LABELS[grade] ?? grade, value }));
 
   // — Palette recharts réactive au thème —
-  const axisColor = isDark ? '#6F7787' : '#8E97A4';
-  const gridColor = isDark ? '#1F2A40' : '#E5E2D8';
-  const barColor  = isDark ? '#5277AE' : '#1E3A8A';
+  const axisColor = isDark ? '#6F7787' : '#667085';
+  const gridColor = isDark ? '#1F2A40' : '#E6ECF7';
+  const barColor  = isDark ? '#3A5FAF' : '#143894';
   const tooltipStyle = {
     backgroundColor: isDark ? '#111827' : '#FFFFFF',
-    border: `1px solid ${isDark ? '#1F2A40' : '#E5E2D8'}`,
+    border: `1px solid ${isDark ? '#1F2A40' : '#E6ECF7'}`,
     borderRadius: 10,
     fontSize: 12,
-    color: isDark ? '#E5E5DE' : '#1F2937',
-    boxShadow: '0 4px 12px rgba(15,31,71,0.08)',
+    color: isDark ? '#E5E5DE' : '#1C2333',
+    boxShadow: '0 4px 12px rgba(20,56,148,0.08)',
   };
 
   return (
@@ -275,10 +275,10 @@ export default function ChefDashboard() {
       {/* Header éditorial */}
       <motion.div variants={staggerItem}>
         <p className="eyebrow mb-1.5">Chef de Département · FS-UEB</p>
-        <h1 className="heading-display text-3xl" style={{ color: isDark ? '#F5F4EE' : '#0B1220' }}>
+        <h1 className="heading-display text-3xl" style={{ color: isDark ? '#F5F4EE' : '#1C2333' }}>
           Tableau de <em>bord</em>
         </h1>
-        <p className="text-sm mt-1 capitalize" style={{ color: isDark ? '#A1A6B0' : '#5B6573' }}>
+        <p className="text-sm mt-1 capitalize" style={{ color: isDark ? '#A1A6B0' : '#667085' }}>
           {today}
           {user?.nom ? ` · ${user.prenom ?? ''} ${user.nom}`.trim() : ''}
         </p>
@@ -305,7 +305,7 @@ export default function ChefDashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
               <XAxis dataKey="niveau" stroke={axisColor} fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke={axisColor} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-              <Tooltip cursor={{ fill: isDark ? 'rgba(82,119,174,0.12)' : 'rgba(30,58,138,0.06)' }}
+              <Tooltip cursor={{ fill: isDark ? 'rgba(58,95,175,0.12)' : 'rgba(20,56,148,0.06)' }}
                 contentStyle={tooltipStyle} formatter={(v) => [`${v} UE${v > 1 ? 's' : ''}`, 'Total']} />
               <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={56}
                 animationBegin={250} animationDuration={1100} animationEasing="ease-out"

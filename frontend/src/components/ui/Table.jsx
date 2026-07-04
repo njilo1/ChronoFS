@@ -31,13 +31,13 @@ export default function Table({
   // Palette inline pour court-circuiter toute désync de .dark
   const c = {
     bg:         isDark ? '#111827' : '#FFFFFF',
-    bgHead:     isDark ? '#0F1729' : '#F7F7F2',
-    border:     isDark ? '#1F2A40' : '#E5E2D8',
+    bgHead:     isDark ? '#0F1729' : '#EEF3FC',
+    border:     isDark ? '#1F2A40' : '#E6ECF7',
     borderSoft: isDark ? 'rgba(31,42,64,0.6)' : 'rgba(229,226,216,0.6)',
-    text:       isDark ? '#E5E5DE' : '#1F2937',
-    textStrong: isDark ? '#F5F4EE' : '#0B1220',
-    textMuted:  isDark ? '#A1A6B0' : '#5B6573',
-    textSub:    isDark ? '#6F7787' : '#8E97A4',
+    text:       isDark ? '#E5E5DE' : '#1C2333',
+    textStrong: isDark ? '#F5F4EE' : '#1C2333',
+    textMuted:  isDark ? '#A1A6B0' : '#667085',
+    textSub:    isDark ? '#6F7787' : '#667085',
     hover:      isDark ? '#1A2235' : 'rgba(251,247,236,0.6)',
   };
 
@@ -46,7 +46,7 @@ export default function Table({
     borderRadius: 6,
     border: `1px solid ${c.border}`,
     backgroundColor: c.bg,
-    boxShadow: '0 1px 2px rgba(15,31,71,0.04)',
+    boxShadow: '0 1px 2px rgba(20,56,148,0.04)',
   };
 
   const tableStyle = {
@@ -115,7 +115,7 @@ export default function Table({
       >
         <div style={{
           padding: 14, borderRadius: 6,
-          backgroundColor: isDark ? '#1A2235' : '#F3F4F1',
+          backgroundColor: isDark ? '#1A2235' : '#F4F6FC',
           border: `1px solid ${c.border}`,
         }}>
           <Inbox size={22} strokeWidth={1.5} style={{ color: c.textSub }} />
@@ -191,7 +191,7 @@ export default function Table({
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.color = accent;
-                            e.currentTarget.style.backgroundColor = isDark ? '#1A2235' : '#F3F4F1';
+                            e.currentTarget.style.backgroundColor = isDark ? '#1A2235' : '#F4F6FC';
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.color = c.textMuted;
@@ -211,8 +211,8 @@ export default function Table({
                           color: c.textMuted, backgroundColor: 'transparent', border: 'none',
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.color = isDark ? '#C9A227' : '#1E3A8A';
-                          e.currentTarget.style.backgroundColor = isDark ? '#1A2235' : '#F3F4F1';
+                          e.currentTarget.style.color = isDark ? '#C8A15A' : '#143894';
+                          e.currentTarget.style.backgroundColor = isDark ? '#1A2235' : '#F4F6FC';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.color = c.textMuted;

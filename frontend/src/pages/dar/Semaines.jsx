@@ -12,7 +12,7 @@ import AssistantResolutionModal from '../../components/ui/AssistantResolutionMod
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import useThemeStore from '../../store/themeStore';
 
-const iCls = 'w-full bg-white border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15 transition-all placeholder:text-ink-subtle';
+const iCls = 'w-full bg-white dark:bg-surface-dark-alt border border-line dark:border-line-dark rounded-xl px-3.5 py-2.5 text-sm text-ink dark:text-ink-dark focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15 transition-all placeholder:text-ink-subtle dark:placeholder:text-ink-dark-subtle';
 function F({ label, children }) {
   return (
     <div>
@@ -25,13 +25,41 @@ function F({ label, children }) {
 const STEP_ORDER  = ['DRAFT', 'IMPORTS_OUVERTS', 'IMPORTS_CLOTURES', 'GENERE', 'PUBLIE'];
 const STEP_LABELS = ['Créé', 'Imports ouverts', 'Clôturé', 'Généré', 'Publié'];
 
-const STATUS_BORDER = {
-  DRAFT:            'border-l-line',
-  IMPORTS_OUVERTS:  'border-l-primary-500',
-  IMPORTS_CLOTURES: 'border-l-warning',
-  GENERE:           'border-l-accent-500',
-  PUBLIE:           'border-l-success',
+// Teinte d'accent par statut (hex) — sert à colorer l'arête givrée des cartes.
+const STATUS_ACCENT = {
+  DRAFT:            '#667085',
+  IMPORTS_OUVERTS:  '#3A5FAF',
+  IMPORTS_CLOTURES: '#B45309',
+  GENERE:           '#8E6F38',
+  PUBLIE:           '#0F6B45',
 };
+
+// hex → rgba avec alpha.
+function rgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+
+/* Bord « verre glacé » à la iOS : pas de filet plein, mais un liseré teinté
+   translucide tout autour, un reflet glossy sur l'arête haute, un voile de
+   teinte qui se dissout vers le bas, et un halo coloré doux dessous.
+   `hover` renforce le halo (feedback d'élévation). */
+function glassEdge(hex, isDark, hover = false) {
+  const ring  = rgba(hex, isDark ? 0.34 : 0.24);
+  const glow  = rgba(hex, isDark ? (hover ? 0.46 : 0.30) : (hover ? 0.52 : 0.40));
+  const gloss = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.92)';
+  return {
+    backgroundColor: isDark ? '#111827' : '#FFFFFF',
+    backgroundImage: `linear-gradient(180deg, ${rgba(hex, isDark ? 0.12 : 0.07)} 0%, ${rgba(hex, 0)} 42%)`,
+    boxShadow: [
+      `inset 0 1px 0 ${gloss}`,        // reflet glossy sur l'arête haute
+      `inset 0 0 0 1px ${ring}`,       // liseré givré teinté (tout le pourtour)
+      hover
+        ? `0 18px 40px -16px ${glow}`  // halo coloré accentué au survol
+        : `0 12px 28px -16px ${glow}`,
+    ].join(', '),
+  };
+}
 
 const ACTIONS = {
   DRAFT:            [{ label: 'Ouvrir les imports',  icon: Play,     key: 'ouvrir-imports',   v: 'primary'   }],
@@ -169,7 +197,7 @@ export default function Semaines() {
             <Calendar size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="heading-display text-3xl flex items-center gap-2.5" style={{ color: isDark ? '#F5F4EE' : '#0B1220' }}>
+            <h1 className="heading-display text-3xl flex items-center gap-2.5" style={{ color: isDark ? '#F5F4EE' : '#1C2333' }}>
               Semaines
               {!loading && (
                 <span className="text-[11px] font-bold text-ink-muted dark:text-ink-dark-muted bg-surface-alt dark:bg-surface-dark-alt border border-line dark:border-line-dark px-2.5 py-1 rounded-full">
@@ -177,7 +205,7 @@ export default function Semaines() {
                 </span>
               )}
             </h1>
-            <p className="text-sm mt-0.5" style={{ color: isDark ? '#A1A6B0' : '#5B6573' }}>Workflow hebdomadaire de planification</p>
+            <p className="text-sm mt-0.5" style={{ color: isDark ? '#A1A6B0' : '#667085' }}>Workflow hebdomadaire de planification</p>
           </div>
         </motion.div>
         <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
@@ -192,25 +220,26 @@ export default function Semaines() {
         </div>
       ) : semaines.length === 0 ? (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="bg-white border border-line rounded-2xl shadow-card py-16 text-center text-ink-muted text-sm">
+          className="bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-2xl shadow-card py-16 text-center text-ink-muted dark:text-ink-dark-muted text-sm">
           Aucune semaine créée pour le moment.
         </motion.div>
       ) : (
         <div className="space-y-3">
           {semaines.map((sw, i) => {
             const stepIdx = STEP_ORDER.indexOf(sw.statut);
-            const borderColor = STATUS_BORDER[sw.statut] ?? 'border-l-line';
+            const accent  = STATUS_ACCENT[sw.statut] ?? STATUS_ACCENT.DRAFT;
             return (
               <motion.div key={sw.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                whileHover={{ y: -3, transition: { type: 'spring', stiffness: 300, damping: 22 } }}
+                whileHover={{ y: -3, boxShadow: glassEdge(accent, isDark, true).boxShadow, transition: { type: 'spring', stiffness: 300, damping: 22 } }}
                 whileTap={{ scale: 0.995 }}
                 onClick={() => navigate(`/dar/semaines/${sw.id}/planning`)}
                 role="button"
                 title="Ouvrir le détail de la semaine"
-                className={`bg-white border border-line border-l-4 ${borderColor} rounded-2xl p-5 shadow-card hover:shadow-card-md hover:border-primary-200 transition-all cursor-pointer`}
+                style={glassEdge(accent, isDark)}
+                className="rounded-3xl p-5 transition-colors cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="min-w-0">

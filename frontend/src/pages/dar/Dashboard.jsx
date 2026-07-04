@@ -38,7 +38,7 @@ function useCountUp(target, delay = 0) {
 }
 
 // Palette bleutée pour les anneaux (un anneau = un département).
-const DEPT_COLORS = ['#1E3A8A', '#1D4ED8', '#3B82F6', '#0EA5E9', '#06B6D4', '#0891B2', '#2563EB', '#60A5FA'];
+const DEPT_COLORS = ['#143894', '#1D4ED8', '#3B82F6', '#0EA5E9', '#06B6D4', '#0891B2', '#2563EB', '#60A5FA'];
 
 /* Forme « active » du donut : le secteur survolé ressort (rayon agrandi) et
    un fin liseré apparaît à l'extérieur → effet de profondeur premium. */
@@ -65,12 +65,12 @@ function OccupationTooltip({ active, payload }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
-      className="bg-white border border-line rounded-xl px-3.5 py-2.5 shadow-card-md text-xs"
+      className="bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-xl px-3.5 py-2.5 shadow-card-md text-xs"
     >
-      <p className="font-bold text-ink mb-1">{d.nom}</p>
-      <p className="text-ink-muted">
-        Taux&ensp;<span className="num font-bold text-ink">{d.taux}%</span>
-        <span className="text-ink-subtle"> · {d.placees}/{d.total} cours</span>
+      <p className="font-bold text-ink dark:text-ink-dark mb-1">{d.nom}</p>
+      <p className="text-ink-muted dark:text-ink-dark-muted">
+        Taux&ensp;<span className="num font-bold text-ink dark:text-ink-dark">{d.taux}%</span>
+        <span className="text-ink-subtle dark:text-ink-dark-subtle"> · {d.placees}/{d.total} cours</span>
       </p>
     </motion.div>
   );
@@ -85,10 +85,10 @@ function KpiCard({ icon: Icon, label, value, sub, index }) {
       variants={staggerItem}
       whileHover={{ y: -4 }}
       transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-      className="group relative bg-white border border-line rounded-2xl p-5 shadow-card cursor-default overflow-hidden hover:shadow-card-lg transition-shadow duration-300"
+      className="group relative bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-2xl p-5 shadow-card cursor-default overflow-hidden hover:shadow-card-lg transition-shadow duration-300"
     >
       {/* Voile navy très doux au survol (pas de gradient coloré) */}
-      <div className="absolute inset-0 bg-primary-50/0 group-hover:bg-primary-50/60 transition-colors duration-300 pointer-events-none" />
+      <div className="absolute inset-0 bg-primary-50/0 group-hover:bg-primary-50/60 dark:group-hover:bg-primary-950/20 transition-colors duration-300 pointer-events-none" />
       {/* Liseré or qui se déploie en bas de la carte */}
       <span className="absolute left-0 bottom-0 h-[2px] w-0 bg-gold-400 group-hover:w-full transition-all duration-500 ease-out pointer-events-none" />
       <div className="relative flex items-start justify-between mb-4">
@@ -100,9 +100,9 @@ function KpiCard({ icon: Icon, label, value, sub, index }) {
           className="text-ink-subtle mt-1 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:-translate-y-0.5 transition-all duration-300"
         />
       </div>
-      <p className="num text-[34px] font-bold text-ink-strong leading-none tracking-tight">{count}</p>
-      <p className="text-[11px] font-bold text-ink-muted uppercase tracking-widest mt-2">{label}</p>
-      {sub && <p className="text-[11px] text-ink-subtle mt-0.5">{sub}</p>}
+      <p className="num text-[34px] font-bold text-ink-strong dark:text-ink-dark-strong leading-none tracking-tight">{count}</p>
+      <p className="text-[11px] font-bold text-ink-muted dark:text-ink-dark-muted uppercase tracking-widest mt-2">{label}</p>
+      {sub && <p className="text-[11px] text-ink-subtle dark:text-ink-dark-subtle mt-0.5">{sub}</p>}
     </motion.div>
   );
 }
@@ -113,13 +113,13 @@ function ChartTooltip({ active, payload, label }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
-      className="bg-white border border-line rounded-xl px-3.5 py-2.5 shadow-card-md text-xs"
+      className="bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-xl px-3.5 py-2.5 shadow-card-md text-xs"
     >
-      <p className="font-bold text-ink mb-1.5">{label ?? payload[0]?.name}</p>
+      <p className="font-bold text-ink dark:text-ink-dark mb-1.5">{label ?? payload[0]?.name}</p>
       {payload.map((p, i) => (
-        <p key={i} className="text-ink-muted">
-          {p.name}&ensp;<span className="num font-bold text-ink">{p.value}</span>
-          {pct != null && <span className="text-ink-subtle"> ({pct}%)</span>}
+        <p key={i} className="text-ink-muted dark:text-ink-dark-muted">
+          {p.name}&ensp;<span className="num font-bold text-ink dark:text-ink-dark">{p.value}</span>
+          {pct != null && <span className="text-ink-subtle dark:text-ink-dark-subtle"> ({pct}%)</span>}
         </p>
       ))}
     </motion.div>
@@ -135,6 +135,15 @@ export default function DarDashboard() {
   const [barHover, setBarHover]     = useState(null); // barre survolée (focus)
   const isDark = useThemeStore((s) => s.theme === 'dark');
   const arr = (r) => Array.isArray(r.data) ? r.data : (r.data.results ?? []);
+
+  // Palette recharts réactive au thème (grille, axes, barres, curseur).
+  const gridColor  = isDark ? '#1F2A40' : '#E5E7EB';
+  const axisColor  = isDark ? '#6F7787' : '#6B7280';
+  const axisSubCol = isDark ? '#4B5468' : '#9CA3AF';
+  const barColor   = isDark ? '#3A5FAF' : '#143894';
+  const cursorFill = isDark ? 'rgba(58,95,175,0.12)' : '#EFF6FF';
+  const labelColor = isDark ? '#A1A6B0' : '#667085';
+  const pieStroke  = isDark ? '#111827' : '#FFFFFF';
 
   // % global affiché au centre du donut, animé en compteur.
   const globalCount = useCountUp(taux?.global ?? 0, 500);
@@ -230,10 +239,10 @@ export default function DarDashboard() {
       {/* Header éditorial */}
       <motion.div variants={staggerItem}>
         <p className="eyebrow mb-1.5">Division des Affaires Académiques · FS-UEB</p>
-        <h1 className="heading-display text-3xl" style={{ color: isDark ? '#F5F4EE' : '#0B1220' }}>
+        <h1 className="heading-display text-3xl" style={{ color: isDark ? '#F5F4EE' : '#1C2333' }}>
           Tableau de <em>bord</em>
         </h1>
-        <p className="text-sm mt-1 capitalize" style={{ color: isDark ? '#A1A6B0' : '#5B6573' }}>
+        <p className="text-sm mt-1 capitalize" style={{ color: isDark ? '#A1A6B0' : '#667085' }}>
           {today}
         </p>
       </motion.div>
@@ -249,18 +258,18 @@ export default function DarDashboard() {
       {/* Charts */}
       <motion.div className="grid grid-cols-1 lg:grid-cols-5 gap-4" variants={staggerItem}>
         {/* Bar chart — salles par campus */}
-        <div className="lg:col-span-3 bg-white border border-line rounded-2xl p-5 shadow-card">
+        <div className="lg:col-span-3 bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-2xl p-5 shadow-card">
           <div className="mb-4">
-            <p className="text-sm font-bold text-ink">Capacité d'accueil par campus</p>
-            <p className="text-xs text-ink-muted mt-0.5">Nombre total de places par site</p>
+            <p className="text-sm font-bold text-ink dark:text-ink-dark">Capacité d'accueil par campus</p>
+            <p className="text-xs text-ink-muted dark:text-ink-dark-muted mt-0.5">Nombre total de places par site</p>
           </div>
           {sallesChart.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={sallesChart} barSize={42} margin={{ top: 18, right: 4, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                <XAxis dataKey="campus" tick={{ fontSize: 11, fill: '#6B7280', fontWeight: 500 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-                <Tooltip content={<ChartTooltip />} cursor={{ fill: '#EFF6FF', radius: 4 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                <XAxis dataKey="campus" tick={{ fontSize: 11, fill: axisColor, fontWeight: 500 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: axisSubCol }} axisLine={false} tickLine={false} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: cursorFill, radius: 4 }} />
                 <Bar
                   dataKey="places" name="Places" radius={[6, 6, 0, 0]}
                   animationBegin={250} animationDuration={1100} animationEasing="ease-out"
@@ -270,30 +279,30 @@ export default function DarDashboard() {
                   {sallesChart.map((_, i) => (
                     <Cell
                       key={i}
-                      fill="#1E3A8A"
+                      fill={barColor}
                       fillOpacity={barHover === null || barHover === i ? 1 : 0.32}
                       style={{ transition: 'fill-opacity 0.25s ease' }}
                     />
                   ))}
                   <LabelList
                     dataKey="places" position="top"
-                    style={{ fill: '#5B6573', fontSize: 11, fontWeight: 700 }}
+                    style={{ fill: labelColor, fontSize: 11, fontWeight: 700 }}
                   />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[240px] flex items-center justify-center text-ink-subtle text-xs">
+            <div className="h-[240px] flex items-center justify-center text-ink-subtle dark:text-ink-dark-subtle text-xs">
               Aucune salle enregistrée
             </div>
           )}
         </div>
 
         {/* Graphe circulaire — taux d'occupation par département */}
-        <div className="lg:col-span-2 bg-white border border-line rounded-2xl p-5 shadow-card">
+        <div className="lg:col-span-2 bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-2xl p-5 shadow-card">
           <div className="mb-2">
-            <p className="text-sm font-bold text-ink">Taux d'occupation par département</p>
-            <p className="text-xs text-ink-muted mt-0.5">Cours placés par département · cette semaine</p>
+            <p className="text-sm font-bold text-ink dark:text-ink-dark">Taux d'occupation par département</p>
+            <p className="text-xs text-ink-muted dark:text-ink-dark-muted mt-0.5">Cours placés par département · cette semaine</p>
           </div>
           {taux ? (
             <>
@@ -305,7 +314,7 @@ export default function DarDashboard() {
                       innerRadius={58} outerRadius={86} paddingAngle={3} cornerRadius={3}
                       animationBegin={200} animationDuration={1000} animationEasing="ease-out"
                       label={({ name }) => name} labelLine={false}
-                      stroke="#FFFFFF" strokeWidth={2}
+                      stroke={pieStroke} strokeWidth={2}
                       activeIndex={activeIdx} activeShape={renderActiveShape}
                       onMouseEnter={(_, i) => setActiveIdx(i)}
                     >
@@ -316,16 +325,16 @@ export default function DarDashboard() {
                 </ResponsiveContainer>
                 {/* Taux global affiché au centre de l'anneau, en compteur animé */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="num text-3xl font-bold text-primary-700 leading-none">{globalCount}%</span>
-                  <span className="text-[10px] text-ink-muted uppercase tracking-[0.18em] mt-1">global</span>
+                  <span className="num text-3xl font-bold text-primary-700 dark:text-primary-300 leading-none">{globalCount}%</span>
+                  <span className="text-[10px] text-ink-muted dark:text-ink-dark-muted uppercase tracking-[0.18em] mt-1">global</span>
                 </div>
               </div>
-              <p className="text-xs text-ink-muted text-center mt-1">
-                <span className="num font-bold text-ink">{taux.complets}</span>/{taux.nbDepts} départements complets
+              <p className="text-xs text-ink-muted dark:text-ink-dark-muted text-center mt-1">
+                <span className="num font-bold text-ink dark:text-ink-dark">{taux.complets}</span>/{taux.nbDepts} départements complets
               </p>
             </>
           ) : (
-            <div className="h-[240px] flex items-center justify-center text-ink-subtle text-xs text-center px-4">
+            <div className="h-[240px] flex items-center justify-center text-ink-subtle dark:text-ink-dark-subtle text-xs text-center px-4">
               Le taux s'affichera une fois le planning de la semaine généré.
             </div>
           )}
@@ -338,18 +347,18 @@ export default function DarDashboard() {
           variants={staggerItem}
           whileHover={{ y: -2 }}
           transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-          className="group bg-white border border-line rounded-2xl p-6 shadow-card hover:shadow-card-md transition-shadow duration-300"
+          className="group bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-2xl p-6 shadow-card hover:shadow-card-md transition-shadow duration-300"
         >
           <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
             <div>
               <p className="eyebrow mb-2">Semaine en cours</p>
-              <h2 className="heading-display text-2xl text-ink-strong">
+              <h2 className="heading-display text-2xl text-ink-strong dark:text-ink-dark-strong">
                 Du{' '}
                 {new Date(semaine.date_debut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
                 {' '}au{' '}
                 {new Date(semaine.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
               </h2>
-              <p className="text-ink-muted text-sm mt-1">
+              <p className="text-ink-muted dark:text-ink-dark-muted text-sm mt-1">
                 {semaine.annee_academique?.libelle && `Année ${semaine.annee_academique.libelle} · `}
                 Semestre {semaine.semestre}
               </p>

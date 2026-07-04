@@ -93,7 +93,7 @@ export default function ChefUEs() {
     >
       {filieres.length === 0 && !loading && (
         <div className="px-4 py-3 bg-warning/8 border border-warning/25 rounded-xl text-warning text-sm">
-          Aucune filière n'est rattachée à votre département. Contactez la DAR avant d'ajouter des UEs.
+          Aucune filière n'est rattachée à votre département. Contactez la DAASR avant d'ajouter des UEs.
         </div>
       )}
 

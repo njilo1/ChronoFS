@@ -100,10 +100,10 @@ export default function ConsulterPlanning() {
       }
     >
       {/* Sélecteur semaine */}
-      <div className="bg-white border border-line rounded-xl p-4 shadow-card flex items-center gap-3">
-        <Calendar size={15} className="text-primary-700 shrink-0" />
+      <div className="bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-xl p-4 shadow-card flex items-center gap-3">
+        <Calendar size={15} className="text-primary-700 dark:text-primary-300 shrink-0" />
         {loadingSem ? <div className="skeleton h-5 rounded w-64" /> : (
-          <select className="flex-1 bg-transparent text-sm text-ink focus:outline-none"
+          <select className="flex-1 bg-transparent text-sm text-ink dark:text-ink-dark focus:outline-none"
             value={selected} onChange={e => setSelected(e.target.value)}>
             <option value="">— Sélectionner une semaine —</option>
             {semaines.map(s => (
@@ -123,18 +123,18 @@ export default function ConsulterPlanning() {
           {Array.from({ length: 16 }).map((_, i) => <SkeletonCard key={i} height="h-20" />)}
         </div>
       ) : !selected ? null : seances.length === 0 ? (
-        <div className="bg-white border border-line rounded-2xl shadow-card py-14 text-center text-ink-muted text-sm">
+        <div className="bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-2xl shadow-card py-14 text-center text-ink-muted dark:text-ink-dark-muted text-sm">
           Aucun cours planifié pour cette semaine.
         </div>
       ) : (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="overflow-x-auto rounded-2xl border border-line bg-white shadow-card">
-          <table className="w-full text-xs border-collapse">
+          className="overflow-x-auto rounded-2xl border border-line dark:border-line-dark bg-white dark:bg-surface-dark shadow-card">
+          <table className="w-full min-w-[760px] text-xs border-collapse">
             <thead>
-              <tr className="bg-surface-subtle border-b border-line">
-                <th className="px-3 py-3 text-left text-[11px] font-bold text-ink-muted uppercase tracking-widest w-24">Créneau</th>
+              <tr className="bg-surface-subtle dark:bg-surface-dark-subtle border-b border-line dark:border-line-dark">
+                <th className="px-3 py-3 text-left text-[11px] font-bold text-ink-muted dark:text-ink-dark-muted uppercase tracking-widest w-24">Créneau</th>
                 {JOURS.map(j => (
-                  <th key={j.idx} className="px-3 py-3 text-center text-[11px] font-bold text-ink-muted uppercase tracking-widest">
+                  <th key={j.idx} className="px-3 py-3 text-center text-[11px] font-bold text-ink-muted dark:text-ink-dark-muted uppercase tracking-widest">
                     {j.label}
                   </th>
                 ))}
@@ -142,27 +142,27 @@ export default function ConsulterPlanning() {
             </thead>
             <tbody>
               {CRENEAUX.map((cren, ci) => (
-                <tr key={ci} className="border-b border-line/60 last:border-0">
-                  <td className="px-3 py-2 text-ink-muted font-medium bg-surface-subtle border-r border-line whitespace-nowrap">
-                    {cren.debut}<br /><span className="text-[10px] text-ink-subtle">{cren.fin}</span>
+                <tr key={ci} className="border-b border-line/60 dark:border-line-dark/60 last:border-0">
+                  <td className="px-3 py-2 text-ink-muted dark:text-ink-dark-muted font-medium bg-surface-subtle dark:bg-surface-dark-subtle border-r border-line dark:border-line-dark whitespace-nowrap">
+                    {cren.debut}<br /><span className="text-[10px] text-ink-subtle dark:text-ink-dark-subtle">{cren.fin}</span>
                   </td>
                   {JOURS.map(j => {
                     const cells = getCell(j.idx, ci);
                     return (
-                      <td key={j.idx} className="px-2 py-1.5 align-top border-r border-line/30 last:border-0">
+                      <td key={j.idx} className="px-2 py-1.5 align-top border-r border-line/30 dark:border-line-dark/30 last:border-0">
                         {cells.map((s, k) => (
                           <motion.div key={s.id ?? k}
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: (ci * 6 + j.idx) * 0.015 }}
-                            className="mb-1 last:mb-0 bg-primary-50 border border-primary-200 rounded-xl p-1.5 hover:border-primary-300 hover:bg-primary-100/60 transition-colors">
-                            <p className="font-bold text-primary-800 truncate leading-tight">
+                            className="mb-1 last:mb-0 bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800/60 rounded-xl p-1.5 hover:border-primary-300 hover:bg-primary-100/60 dark:hover:bg-primary-900/40 transition-colors">
+                            <p className="font-bold text-primary-800 dark:text-primary-200 truncate leading-tight">
                               {s.ue_code ?? '—'}
                             </p>
-                            <p className="text-ink-muted truncate leading-tight mt-0.5 text-[10px]">
+                            <p className="text-ink-muted dark:text-ink-dark-muted truncate leading-tight mt-0.5 text-[10px]">
                               {s.filiere_libelle ?? ''}
                             </p>
-                            <p className="text-ink-subtle truncate leading-tight text-[10px]">
+                            <p className="text-ink-subtle dark:text-ink-dark-subtle truncate leading-tight text-[10px]">
                               {s.enseignant_nom ?? '—'}
                               {s.salle_nom ? ` · ${s.salle_nom}` : ''}
                             </p>

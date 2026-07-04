@@ -25,13 +25,13 @@ export default function PageShell({
   const theme  = useThemeStore((s) => s.theme);
   const isDark = theme === 'dark';
 
-  const titleColor    = isDark ? '#F5F4EE' : '#0B1220';
-  const subtitleColor = isDark ? '#A1A6B0' : '#5B6573';
-  const iconBg        = '#1E3A8A';
+  const titleColor    = isDark ? '#F5F4EE' : '#1C2333';
+  const subtitleColor = isDark ? '#A1A6B0' : '#667085';
+  const iconBg        = '#143894';
   const iconFg        = '#FFFFFF';
-  const ruleColor     = isDark ? '#1F2A40' : '#E5E2D8';
-  const countColor    = isDark ? '#DBBC5E' : '#8B6622';
-  const eyebrowColor  = isDark ? '#A1A6B0' : '#5B6573';
+  const ruleColor     = isDark ? '#1F2A40' : '#E6ECF7';
+  const countColor    = isDark ? '#D9BC7E' : '#8E6F38';
+  const eyebrowColor  = isDark ? '#A1A6B0' : '#667085';
 
   return (
     <div className="space-y-6">
@@ -62,7 +62,7 @@ export default function PageShell({
             )}
             <h1
               className="heading-display flex items-baseline gap-3 flex-wrap"
-              style={{ color: titleColor, fontSize: '2rem' }}
+              style={{ color: titleColor, fontSize: 'clamp(1.5rem, 5vw, 2rem)' }}
             >
               <span>{title}</span>
               {count != null && (

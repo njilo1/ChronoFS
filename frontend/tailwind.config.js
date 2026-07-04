@@ -6,70 +6,71 @@ export default {
     extend: {
       colors: {
         // — Bleu institutionnel UEB —
+        // — Palette officielle (maquette 2026-07-04). Ne pas inventer de bleus. —
         primary: {
-          50:  '#EFF4FB',
-          100: '#D8E3F2',
-          200: '#B3C6E2',
-          300: '#85A2CC',
-          400: '#5277AE',
-          500: '#2E5391',
-          600: '#1F4079',
-          700: '#1A3568',
-          800: '#162C56',
-          900: '#1E3A8A',
-          950: '#0F1F47',
+          50:  '#F2F5FE',  // bleu-lavande très clair (fond hero, cases) — teinte maquette
+          100: '#E6ECF7',  // bordures
+          200: '#D9E3F5',  // bleu clair (bordure bouton secondaire)
+          300: '#DCE7FF',  // bleu clair (icônes sur fond foncé)
+          400: '#3E5EC0',  // bleu moyen (hover, icônes)
+          500: '#2F4EB8',  // bleu moyen
+          600: '#234BA0',  // bleu secondaire (accents de titre)
+          700: '#1D419A',  // bleu secondaire
+          800: '#183D95',  // bleu secondaire (hover foncé, fin de dégradé)
+          900: '#143894',  // bleu principal maquette (aplats, boutons, bandes)
+          950: '#102E7E',  // footer = bleu principal, légèrement plus profond
         },
-        // — Or académique discret (accent ponctuel) —
+        // — Accent doré unique #C8A15A (tampon « Sans conflit »). Les autres
+        //   niveaux sont des variations claires/foncées de CE même doré. —
         gold: {
-          50:  '#FBF7EC',
-          100: '#F4EBCB',
-          200: '#E9D596',
-          300: '#DBBC5E',
-          400: '#C9A227',
-          500: '#A67E2E',
-          600: '#8B6622',
-          700: '#6F5018',
-          800: '#544013',
+          50:  '#FAF6EC',
+          100: '#F2E8CE',
+          200: '#E7D3A6',
+          300: '#D9BC7E',
+          400: '#C8A15A',
+          500: '#C8A15A',
+          600: '#AC8846',
+          700: '#8E6F38',
+          800: '#6E5629',
         },
-        // — Alias rétrocompatibilité : les anciennes classes "accent-*"
-        //   pointent désormais sur la palette dorée institutionnelle.
+        // — Alias rétrocompatibilité : "accent-*" pointe sur le doré. —
         accent: {
-          50:  '#FBF7EC',
-          100: '#F4EBCB',
-          200: '#E9D596',
-          300: '#DBBC5E',
-          400: '#C9A227',
-          500: '#A67E2E',
-          600: '#8B6622',
-          700: '#6F5018',
-          800: '#544013',
+          50:  '#FAF6EC',
+          100: '#F2E8CE',
+          200: '#E7D3A6',
+          300: '#D9BC7E',
+          400: '#C8A15A',
+          500: '#C8A15A',
+          600: '#AC8846',
+          700: '#8E6F38',
+          800: '#6E5629',
         },
         // — Surfaces (papier en clair, encre en sombre) —
         page: {
-          DEFAULT: '#FAFAF7',
+          DEFAULT: '#F4F6FC',  // fond gris très clair
           dark:    '#0A0F1F',
         },
         surface: {
           DEFAULT: '#FFFFFF',
-          alt:    '#F3F4F1',
-          subtle: '#F7F7F2',
+          alt:    '#F4F6FC',
+          subtle: '#EEF3FC',
           dark:        '#111827',
           'dark-alt':  '#1A2235',
           'dark-subtle': '#0F1729',
         },
         ink: {
-          strong:  '#0B1220',
-          DEFAULT: '#1F2937',
-          muted:   '#5B6573',
-          subtle:  '#8E97A4',
+          strong:  '#1C2333',  // texte principal
+          DEFAULT: '#1C2333',
+          muted:   '#667085',  // texte secondaire
+          subtle:  '#667085',
           'dark-strong': '#F5F4EE',
           'dark':        '#E5E5DE',
           'dark-muted':  '#A1A6B0',
           'dark-subtle': '#6F7787',
         },
         line: {
-          DEFAULT: '#E5E2D8',
-          strong:  '#C9C5B6',
+          DEFAULT: '#E6ECF7',  // bordures
+          strong:  '#D9E3F5',
           dark:    '#1F2A40',
           'dark-strong': '#2A3651',
         },
@@ -91,11 +92,11 @@ export default {
       },
       boxShadow: {
         // Ombres sobres, pas de glow coloré
-        card:      '0 1px 2px rgba(15,31,71,0.04), 0 1px 3px rgba(15,31,71,0.04)',
-        'card-md': '0 4px 12px rgba(15,31,71,0.08)',
-        'card-lg': '0 12px 24px -8px rgba(15,31,71,0.12), 0 4px 8px -4px rgba(15,31,71,0.06)',
-        sidebar:   '1px 0 0 rgba(0,0,0,0.04)',
-        'ring-gold': '0 0 0 1px rgba(166,126,46,0.30)',
+        card:      '0 1px 2px rgba(20,56,148,0.06), 0 1px 3px rgba(20,56,148,0.06)',
+        'card-md': '0 4px 12px rgba(20,56,148,0.08)',
+        'card-lg': '0 12px 24px -8px rgba(20,56,148,0.12), 0 4px 8px -4px rgba(20,56,148,0.06)',
+        sidebar:   '1px 0 0 rgba(20,56,148,0.06)',
+        'ring-gold': '0 0 0 1px rgba(200,161,90,0.30)',
       },
       animation: {
         shimmer:     'shimmer 1.8s linear infinite',

@@ -228,9 +228,9 @@ export default function Planning() {
             <LayoutGrid size={16} className="text-white" />
           </div>
           <div>
-            <h1 className="heading-display text-3xl" style={{ color: isDark ? '#F5F4EE' : '#0B1220' }}>Planning</h1>
+            <h1 className="heading-display text-3xl" style={{ color: isDark ? '#F5F4EE' : '#1C2333' }}>Planning</h1>
             {semaine && (
-              <p className="text-sm mt-0.5 flex items-center gap-2 flex-wrap" style={{ color: isDark ? '#A1A6B0' : '#5B6573' }}>
+              <p className="text-sm mt-0.5 flex items-center gap-2 flex-wrap" style={{ color: isDark ? '#A1A6B0' : '#667085' }}>
                 Du {fmtDate(semaine.date_debut)} au {fmtDate(semaine.date_fin)}
                 <Badge status={semaine.statut} />
               </p>

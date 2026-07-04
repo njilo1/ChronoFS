@@ -20,8 +20,8 @@ export default function HamburgerButton({ open, onClick, className = '' }) {
       className={'group relative inline-flex items-center justify-center w-9 h-9 rounded-md border transition-colors ' + className}
       style={{
         backgroundColor: isDark ? '#0F1729' : '#FFFFFF',
-        borderColor:     isDark ? '#1F2A40' : '#E5E2D8',
-        color:           isDark ? '#F5F4EE' : '#0B1220',
+        borderColor:     isDark ? '#1F2A40' : '#E6ECF7',
+        color:           isDark ? '#F5F4EE' : '#1C2333',
       }}
     >
       <span className="relative w-4 h-3.5 flex flex-col justify-between items-stretch">

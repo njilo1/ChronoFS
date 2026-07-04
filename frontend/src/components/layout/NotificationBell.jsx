@@ -1,20 +1,17 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell, FolderOpen, Lock, CheckCircle2, Inbox, UserPlus, KeyRound, CheckCheck,
 } from 'lucide-react';
 import useThemeStore from '../../store/themeStore';
-import { toast } from '../../store/toastStore';
-import {
-  fetchNotifications, fetchUnreadCount, markRead, markAllRead,
-} from '../../services/notifications';
+import useNotificationStore from '../../store/notificationStore';
 
 const POLL_MS = 45000;
 
 // Icône + couleur par type de notification (palette bleue/sémantique, pas d'or).
 const TYPE_META = {
-  IMPORTS_OUVERTS:    { Icon: FolderOpen,  color: '#1E3A8A' },
+  IMPORTS_OUVERTS:    { Icon: FolderOpen,  color: '#143894' },
   IMPORTS_CLOTURES:   { Icon: Lock,        color: '#B45309' },
   PLANNING_PUBLIE:    { Icon: CheckCircle2, color: '#0F6B45' },
   PLANNING_RECU:      { Icon: Inbox,       color: '#1D4ED8' },
@@ -36,75 +33,65 @@ export default function NotificationBell() {
   const isDark   = useThemeStore((s) => s.theme === 'dark');
   const navigate = useNavigate();
 
-  const [open, setOpen]     = useState(false);
-  const [items, setItems]   = useState([]);
-  const [count, setCount]   = useState(0);
-  const [loading, setLoading] = useState(false);
-  const prevCount = useRef(null);
+  const [open, setOpen] = useState(false);
 
-  const textCol   = isDark ? '#F5F4EE' : '#0B1220';
-  const textMuted = isDark ? '#A1A6B0' : '#5B6573';
-  const borderCol = isDark ? '#1F2A40' : '#E5E2D8';
+  // État partagé via le store (cache + prefetch + garde anti-écrasement).
+  const items        = useNotificationStore((s) => s.items);
+  const count        = useNotificationStore((s) => s.count);
+  const loading      = useNotificationStore((s) => s.loading);
+  const refreshCount = useNotificationStore((s) => s.refreshCount);
+  const loadList     = useNotificationStore((s) => s.loadList);
+  const prefetch     = useNotificationStore((s) => s.prefetch);
+  const markRead     = useNotificationStore((s) => s.markRead);
+  const markAllRead  = useNotificationStore((s) => s.markAllRead);
 
-  // Rafraîchit le compteur ; toast si de NOUVELLES notifs sont arrivées.
-  const refreshCount = useCallback(async () => {
-    try {
-      const n = await fetchUnreadCount();
-      if (prevCount.current != null && n > prevCount.current) {
-        const diff = n - prevCount.current;
-        toast.info(diff > 1 ? `${diff} nouvelles notifications` : 'Nouvelle notification');
-      }
-      prevCount.current = n;
-      setCount(n);
-    } catch { /* silencieux : réseau */ }
-  }, []);
+  const textCol   = isDark ? '#F5F4EE' : '#1C2333';
+  const textMuted = isDark ? '#A1A6B0' : '#667085';
+  const borderCol = isDark ? '#1F2A40' : '#E6ECF7';
 
-  const loadList = useCallback(async () => {
-    setLoading(true);
-    try {
-      setItems(await fetchNotifications());
-    } catch { /* silencieux */ } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Polling + rafraîchissement au focus de l'onglet.
+  // Polling du compteur + rafraîchissement au focus de l'onglet, et prefetch
+  // de la liste au repos (idle) → première ouverture instantanée.
   useEffect(() => {
     refreshCount();
+    const useIdle = typeof window.requestIdleCallback === 'function';
+    const idle = useIdle
+      ? window.requestIdleCallback(() => prefetch(), { timeout: 2500 })
+      : setTimeout(() => prefetch(), 1200);
+
     const id = setInterval(refreshCount, POLL_MS);
     const onFocus = () => refreshCount();
     window.addEventListener('focus', onFocus);
-    return () => { clearInterval(id); window.removeEventListener('focus', onFocus); };
-  }, [refreshCount]);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener('focus', onFocus);
+      if (useIdle) window.cancelIdleCallback(idle);
+      else clearTimeout(idle);
+    };
+  }, [refreshCount, prefetch]);
 
   const toggle = () => {
     const next = !open;
     setOpen(next);
-    if (next) loadList();
+    if (next) loadList();          // cache instantané + revalidation silencieuse
   };
 
-  const handleClick = async (notif) => {
-    setOpen(false);
-    if (!notif.lu) {
-      setItems((arr) => arr.map((n) => (n.id === notif.id ? { ...n, lu: true } : n)));
-      setCount((c) => Math.max(0, c - 1));
-      prevCount.current = Math.max(0, (prevCount.current ?? 1) - 1);
-      markRead(notif.id).catch(() => {});
+  const handleClick = (notif) => {
+    if (!notif.lu) markRead(notif.id);
+    // On ne ferme le panneau que s'il y a une page à ouvrir : sinon l'utilisateur
+    // peut enchaîner la lecture de plusieurs notifications sans le rouvrir.
+    if (notif.lien) {
+      setOpen(false);
+      navigate(notif.lien);
     }
-    if (notif.lien) navigate(notif.lien);
   };
 
-  const handleMarkAll = async () => {
-    setItems((arr) => arr.map((n) => ({ ...n, lu: true })));
-    setCount(0);
-    prevCount.current = 0;
-    markAllRead().catch(() => {});
-  };
+  const handleMarkAll = () => markAllRead();
 
   return (
     <div className="relative">
       <button
         onClick={toggle}
+        onMouseEnter={prefetch}
         aria-label="Notifications"
         className="relative p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
         style={{ color: textMuted }}
@@ -161,7 +148,7 @@ export default function NotificationBell() {
                   </div>
                 ) : (
                   items.map((n) => {
-                    const meta = TYPE_META[n.type] ?? { Icon: Bell, color: '#1E3A8A' };
+                    const meta = TYPE_META[n.type] ?? { Icon: Bell, color: '#143894' };
                     const Icon = meta.Icon;
                     return (
                       <button
@@ -169,7 +156,7 @@ export default function NotificationBell() {
                         onClick={() => handleClick(n)}
                         className="w-full flex items-start gap-3 px-4 py-3 text-left transition-colors
                                    hover:bg-primary-50/60 dark:hover:bg-primary-950/20 border-b last:border-b-0"
-                        style={{ borderColor: borderCol, backgroundColor: n.lu ? 'transparent' : (isDark ? 'rgba(82,119,174,0.08)' : 'rgba(30,58,138,0.04)') }}
+                        style={{ borderColor: borderCol, backgroundColor: n.lu ? 'transparent' : (isDark ? 'rgba(58,95,175,0.08)' : 'rgba(20,56,148,0.04)') }}
                       >
                         <span className="mt-0.5 shrink-0 p-1.5 rounded-lg" style={{ backgroundColor: `${meta.color}1A` }}>
                           <Icon size={14} style={{ color: meta.color }} strokeWidth={1.8} />

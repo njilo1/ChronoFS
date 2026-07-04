@@ -17,8 +17,8 @@ export default function ThemeToggle({ className = '' }) {
       className={'group relative inline-flex items-center justify-center w-9 h-9 rounded-md border transition-colors ' + className}
       style={{
         backgroundColor: isDark ? '#0F1729' : '#FFFFFF',
-        borderColor:     isDark ? '#1F2A40' : '#E5E2D8',
-        color:           isDark ? '#C9A227' : '#1E3A8A',
+        borderColor:     isDark ? '#1F2A40' : '#E6ECF7',
+        color:           isDark ? '#C8A15A' : '#143894',
       }}
     >
       <AnimatePresence mode="wait" initial={false}>

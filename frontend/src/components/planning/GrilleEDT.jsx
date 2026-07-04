@@ -51,23 +51,23 @@ function CarteSeance({ seance, draggable, onEdit }) {
       onClick={onEdit ? () => onEdit(seance) : undefined}
       title={onEdit ? 'Cliquer pour modifier · glisser pour déplacer' : undefined}
       className={
-        'space-y-0.5 min-h-[60px] p-1 rounded-lg bg-primary-50 border border-primary-100 ' +
+        'space-y-0.5 min-h-[60px] p-1 rounded-lg bg-primary-50 dark:bg-primary-950/40 border border-primary-100 dark:border-primary-800/50 ' +
         (draggable ? 'cursor-grab active:cursor-grabbing select-none ' : '') +
         (onEdit && !draggable ? 'cursor-pointer ' : '') +
-        (onEdit ? 'hover:border-primary-300 hover:bg-primary-100/70 transition-colors ' : '') +
+        (onEdit ? 'hover:border-primary-300 hover:bg-primary-100/70 dark:hover:bg-primary-900/50 transition-colors ' : '') +
         (isDragging ? 'opacity-40 ring-2 ring-primary-400 ' : '')
       }
     >
-      <div className="font-bold text-ink-strong leading-tight text-[11px]">
+      <div className="font-bold text-ink-strong dark:text-ink-dark-strong leading-tight text-[11px]">
         {seance.filiere_libelle ?? `${seance.filiere?.nom ?? ''} ${seance.filiere?.niveau ?? ''}`.trim()}
       </div>
-      <div className="text-primary-700 font-semibold text-[10px]">
+      <div className="text-primary-700 dark:text-primary-300 font-semibold text-[10px]">
         {seance.ue_code ?? seance.ue?.code ?? ''}
       </div>
-      <div className="text-ink-muted leading-tight line-clamp-2 text-[10px]">
+      <div className="text-ink-muted dark:text-ink-dark-muted leading-tight line-clamp-2 text-[10px]">
         {seance.ue_intitule ?? seance.ue?.intitule ?? ''}
       </div>
-      <div className="text-ink-subtle italic text-[10px]">
+      <div className="text-ink-subtle dark:text-ink-dark-subtle italic text-[10px]">
         {seance.enseignant_nom ?? (
           seance.enseignant
             ? `${seance.enseignant.grade ? seance.enseignant.grade + ' ' : ''}${seance.enseignant.nom}`
@@ -75,7 +75,7 @@ function CarteSeance({ seance, draggable, onEdit }) {
         )}
       </div>
       {(seance.salle_nom ?? seance.salle?.nom) && (
-        <div className="text-[10px] text-accent-600 font-medium">
+        <div className="text-[10px] text-accent-600 dark:text-accent-300 font-medium">
           Salle {seance.salle_nom ?? seance.salle.nom}
         </div>
       )}
@@ -95,8 +95,8 @@ function CelluleCours({ jourIdx, creneauIdx, seances, droppable, onEdit }) {
     <td
       ref={setNodeRef}
       className={
-        'border-r last:border-r-0 border-line/40 px-2 py-2 align-top transition-colors ' +
-        (isOver ? 'bg-primary-100/50 ring-2 ring-primary-400 ring-inset ' : '')
+        'border-r last:border-r-0 border-line/40 dark:border-line-dark/40 px-2 py-2 align-top transition-colors ' +
+        (isOver ? 'bg-primary-100/50 dark:bg-primary-900/40 ring-2 ring-primary-400 ring-inset ' : '')
       }
     >
       {seances.length === 0 ? null : (
@@ -156,16 +156,16 @@ export default function GrilleEDT({ seances = [], onMove, onEdit }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="overflow-x-auto rounded-xl border border-line shadow-card bg-white"
+      className="overflow-x-auto rounded-xl border border-line dark:border-line-dark shadow-card bg-white dark:bg-surface-dark"
     >
-      <table className="w-full text-xs border-collapse">
+      <table className="w-full min-w-[760px] text-xs border-collapse">
         <thead>
-          <tr className="bg-primary-50 border-b border-line">
-            <th className="border-r border-line px-3 py-2.5 text-primary-700 font-semibold text-center w-24 text-[11px] uppercase tracking-wider">
+          <tr className="bg-primary-50 dark:bg-primary-950/30 border-b border-line dark:border-line-dark">
+            <th className="border-r border-line dark:border-line-dark px-3 py-2.5 text-primary-700 dark:text-primary-300 font-semibold text-center w-24 text-[11px] uppercase tracking-wider">
               Horaires
             </th>
             {JOURS.map((j) => (
-              <th key={j} className="border-r border-line last:border-r-0 px-3 py-2.5 text-primary-700 font-semibold text-center text-[11px] uppercase tracking-wider">
+              <th key={j} className="border-r border-line dark:border-line-dark last:border-r-0 px-3 py-2.5 text-primary-700 dark:text-primary-300 font-semibold text-center text-[11px] uppercase tracking-wider">
                 {j}
               </th>
             ))}
@@ -175,20 +175,20 @@ export default function GrilleEDT({ seances = [], onMove, onEdit }) {
           {ROWS.map((row, ri) => {
             if (row.type === 'pause') {
               return (
-                <tr key={ri} className="bg-surface-alt">
-                  <td className="border-r border-t border-line/40 px-3 py-1 text-center text-ink-subtle italic text-[10px]">
+                <tr key={ri} className="bg-surface-alt dark:bg-surface-dark-alt">
+                  <td className="border-r border-t border-line/40 dark:border-line-dark/40 px-3 py-1 text-center text-ink-subtle dark:text-ink-dark-subtle italic text-[10px]">
                     {row.horaire}
                   </td>
                   {JOURS.map((_, ji) => (
-                    <td key={ji} className="border-r last:border-r-0 border-t border-line/40 bg-surface-alt" />
+                    <td key={ji} className="border-r last:border-r-0 border-t border-line/40 dark:border-line-dark/40 bg-surface-alt dark:bg-surface-dark-alt" />
                   ))}
                 </tr>
               );
             }
 
             return (
-              <tr key={ri} className="border-t border-line/60">
-                <td className="border-r border-line px-3 py-3 text-center font-semibold text-ink-muted bg-surface-alt/60 align-middle text-[11px] whitespace-nowrap">
+              <tr key={ri} className="border-t border-line/60 dark:border-line-dark/60">
+                <td className="border-r border-line dark:border-line-dark px-3 py-3 text-center font-semibold text-ink-muted dark:text-ink-dark-muted bg-surface-alt/60 dark:bg-surface-dark-alt/60 align-middle text-[11px] whitespace-nowrap">
                   {row.horaire}
                 </td>
                 {[0, 1, 2, 3, 4, 5].map((jourIdx) => (

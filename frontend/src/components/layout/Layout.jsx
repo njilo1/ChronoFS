@@ -33,11 +33,11 @@ export default function Layout() {
   }, [theme]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-page dark:bg-page-dark">
+    <div className="flex h-[100dvh] overflow-hidden bg-page dark:bg-page-dark">
       <Sidebar />
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Header />
-        <main ref={mainRef} tabIndex={-1} className="flex-1 overflow-y-auto p-8 bg-paper focus:outline-none">
+        <main ref={mainRef} tabIndex={-1} className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-paper focus:outline-none">
           <div className="max-w-[1400px] mx-auto">
             <AnimatePresence mode="wait">
               <PageTransition key={location.pathname}>

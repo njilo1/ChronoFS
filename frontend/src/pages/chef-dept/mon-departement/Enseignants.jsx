@@ -26,7 +26,7 @@ const BLANK = { nom: '', grade: 'DR', statut: 'PERMANENT', matricule: '' };
 
 const COLS = [
   { key: 'grade', label: 'Grade', render: r => (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold bg-surface-alt text-ink-muted border border-line">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold bg-surface-alt dark:bg-surface-dark-alt text-ink-muted dark:text-ink-dark-muted border border-line dark:border-line-dark">
       {GRADE_LABELS[r.grade] ?? r.grade ?? '—'}
     </span>
   )},
@@ -37,7 +37,7 @@ const COLS = [
       : <span className="font-mono text-[11px] text-ink-subtle italic" title="Référence interne (pas de matricule officiel)">{r.identifiant ?? '—'}</span>
   )},
   { key: 'statut', label: 'Type', render: r => (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${r.statut === 'VACATAIRE' ? 'bg-gold-100 text-gold-700 border-gold-200' : 'bg-surface-alt text-ink-muted border-line'}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border ${r.statut === 'VACATAIRE' ? 'bg-gold-100 dark:bg-gold-500/15 text-gold-700 dark:text-gold-300 border-gold-200 dark:border-gold-500/30' : 'bg-surface-alt dark:bg-surface-dark-alt text-ink-muted dark:text-ink-dark-muted border-line dark:border-line-dark'}`}>
       {STATUT_LABELS[r.statut] ?? r.statut ?? 'Permanent'}
     </span>
   )},
@@ -154,7 +154,7 @@ export default function ChefEnseignants() {
               onChange={e => setForm({ ...form, matricule: e.target.value.toUpperCase() })} />
           </F>
         ) : (
-          <div className="text-[12px] text-ink-muted bg-surface-subtle border border-line rounded-xl px-3 py-2.5 leading-relaxed">
+          <div className="text-[12px] text-ink-muted dark:text-ink-dark-muted bg-surface-subtle dark:bg-surface-dark-subtle border border-line dark:border-line-dark rounded-xl px-3 py-2.5 leading-relaxed">
             Les vacataires n'ont pas de matricule officiel : un identifiant interne
             (ex. <span className="font-mono font-semibold">VAC-0007</span>) leur est attribué automatiquement.
           </div>

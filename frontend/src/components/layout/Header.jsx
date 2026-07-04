@@ -10,6 +10,8 @@ import ThemeToggle from '../ui/ThemeToggle';
 import HamburgerButton from '../ui/HamburgerButton';
 import ProfilModal from '../ui/ProfilModal';
 import NotificationBell from './NotificationBell';
+import { useIsDesktop } from '../../hooks/useMediaQuery';
+import logoFs from '../../assets/logo_fs.png';
 
 function getInitials(name) {
   if (!name) return 'U';
@@ -21,9 +23,10 @@ function getInitials(name) {
 
 export default function Header() {
   const { user } = useAuthStore();
-  const { sidebarCollapsed, toggleSidebar } = useUiStore();
+  const { sidebarCollapsed, toggleSidebar, mobileNavOpen, toggleMobileNav } = useUiStore();
   const theme = useThemeStore((s) => s.theme);
   const isDark = theme === 'dark';
+  const isDesktop = useIsDesktop();
   const navigate = useNavigate();
 
   const [menuOpen, setMenuOpen]       = useState(false);
@@ -41,9 +44,9 @@ export default function Header() {
   // classe `.dark` sur <html>. Garantit que le header bascule entre clair et
   // sombre dès le clic.
   const bgHeader  = isDark ? '#0F1729' : '#FFFFFF';
-  const borderCol = isDark ? '#1F2A40' : '#E5E2D8';
-  const textCol   = isDark ? '#F5F4EE' : '#0B1220';
-  const textMuted = isDark ? '#A1A6B0' : '#5B6573';
+  const borderCol = isDark ? '#1F2A40' : '#E6ECF7';
+  const textCol   = isDark ? '#F5F4EE' : '#1C2333';
+  const textMuted = isDark ? '#A1A6B0' : '#667085';
   const menuBg    = isDark ? '#111827' : '#FFFFFF';
 
   return (
@@ -54,8 +57,23 @@ export default function Header() {
       style={{ borderBottomWidth: 1, borderBottomStyle: 'solid' }}
       className="h-14 flex items-center justify-between px-5 shrink-0 relative z-30"
     >
-      {/* Gauche : hamburger (ouvre/réduit la sidebar) */}
-      <HamburgerButton open={!sidebarCollapsed} onClick={toggleSidebar} />
+      {/* Gauche : hamburger + marque (sur mobile, la sidebar est masquée).
+          - Desktop : le hamburger replie/déploie la sidebar.
+          - Mobile  : le hamburger ouvre/ferme le tiroir de navigation. */}
+      <div className="flex items-center gap-3 min-w-0">
+        <HamburgerButton
+          open={isDesktop ? !sidebarCollapsed : mobileNavOpen}
+          onClick={isDesktop ? toggleSidebar : toggleMobileNav}
+        />
+        <div className="flex items-center gap-2 lg:hidden min-w-0">
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-white border shrink-0" style={{ borderColor: borderCol }}>
+            <img src={logoFs} alt="FS-UEB" className="w-full h-full object-cover" />
+          </div>
+          <span className="font-display font-semibold text-[17px] tracking-tight truncate" style={{ color: textCol }}>
+            Chrono<em className="italic font-normal" style={{ color: isDark ? '#D9BC7E' : '#8E6F38' }}>FS</em>
+          </span>
+        </div>
+      </div>
 
       {/* Droite : thème + menu utilisateur */}
       <motion.div
@@ -79,7 +97,7 @@ export default function Header() {
             <div
               className="w-8 h-8 rounded-full text-[11px] font-bold flex items-center justify-center tracking-wide shrink-0"
               style={{
-                backgroundColor: isDark ? '#A67E2E' : '#1E3A8A',
+                backgroundColor: isDark ? '#8E6F38' : '#143894',
                 color:           isDark ? '#0A0F1F' : '#FFFFFF',
               }}
             >

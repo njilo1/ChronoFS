@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>ChronoFS — FS-UEB</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,6 +19,9 @@
             theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
           }
           if (theme === 'dark') document.documentElement.classList.add('dark');
+          // Pose color-scheme AVANT le rendu : contrôles natifs et auto-dark
+          // de Chrome alignés dès la première peinture (pas de flash/divergence).
+          document.documentElement.style.colorScheme = theme || 'light';
         } catch (e) {}
       })();
     </script>
