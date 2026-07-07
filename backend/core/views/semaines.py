@@ -24,12 +24,16 @@ from rest_framework.response import Response
 from core.constants import (
     Role,
     SALLES_AUTORISEES_PAR_TYPE_COURS,
+    salle_speciale_requise,
     StatutSemaine,
     TOLERANCE_SURCAPACITE,
     TypeNotification,
     TypeSalle,
 )
-from core.models import ArchivePlanning, DemandeCours, Departement, Salle, Seance, Semaine
+from core.models import (
+    ArchivePlanning, DemandeCours, Departement, ImportPlanning,
+    ImportPlanningHistorique, Salle, Seance, Semaine,
+)
 from core.permissions import IsDAR, IsDARorReadOnly
 from core.services.disponibilites import creneaux_bloques
 from core.services.notifications import notifier_chefs
@@ -50,6 +54,37 @@ class SemaineViewSet(viewsets.ModelViewSet):
     filterset_fields   = ['statut', 'semestre', 'annee_academique']
     ordering_fields    = ['date_debut']
     ordering           = ['-date_debut']
+
+    # ── Suppression d'une semaine (DAR) ──────────────────────────────────────
+    @extend_schema(
+        summary="Supprimer une semaine et toutes ses données",
+        description=(
+            "Réservé au DAR. Supprime la semaine ainsi que, EN CASCADE, ses "
+            "imports, demandes de cours, séances et archives. Les fichiers "
+            "physiques liés (Excel importés, PDF/DOCX archivés) sont aussi "
+            "effacés du disque. Action irréversible — utile pour repartir de "
+            "zéro après une erreur de saisie."
+        ),
+    )
+    def destroy(self, request, *args, **kwargs):
+        semaine = self.get_object()
+
+        # Effacer les fichiers physiques AVANT la suppression en base, sinon
+        # ils resteraient orphelins dans media/ (Django ne les supprime pas seul).
+        for imp in ImportPlanning.objects.filter(semaine=semaine):
+            if imp.fichier:
+                imp.fichier.delete(save=False)
+        for himp in ImportPlanningHistorique.objects.filter(semaine=semaine):
+            if himp.fichier:
+                himp.fichier.delete(save=False)
+        for arc in ArchivePlanning.objects.filter(semaine=semaine):
+            if arc.fichier_pdf:
+                arc.fichier_pdf.delete(save=False)
+            if arc.fichier_docx:
+                arc.fichier_docx.delete(save=False)
+
+        semaine.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     # ── Ouverture des imports (DAR) ──────────────────────────────────────────
     @extend_schema(
@@ -207,7 +242,10 @@ class SemaineViewSet(viewsets.ModelViewSet):
         d = (
             DemandeCours.objects
             .filter(id=demande_id, import_source__semaine=semaine)
-            .select_related('filiere__campus_obligatoire', 'ue', 'enseignant')
+            .select_related(
+                'filiere__campus_obligatoire', 'filiere__departement',
+                'ue', 'enseignant',
+            )
             .first()
         )
         if d is None:
@@ -231,7 +269,19 @@ class SemaineViewSet(viewsets.ModelViewSet):
                 {'detail': f"{d.filiere} doit se tenir au campus « {campus_force.nom} »."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if salle.type_salle not in SALLES_AUTORISEES_PAR_TYPE_COURS.get(d.type_cours, []):
+        # Salle spéciale SBAA (terrain / labo) : si une est imposée, elle prime ;
+        # sinon on retombe sur les types classiques (qui excluent terrain et labo).
+        type_special = salle_speciale_requise(
+            d.filiere.departement.code, d.type_cours, getattr(d.ue, 'intitule', None),
+        )
+        if type_special is not None:
+            if salle.type_salle != type_special:
+                return Response(
+                    {'detail': f"Ce TP de {d.filiere} doit se tenir "
+                               f"{'au laboratoire' if type_special == TypeSalle.LABO else 'sur le terrain'}."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        elif salle.type_salle not in SALLES_AUTORISEES_PAR_TYPE_COURS.get(d.type_cours, []):
             return Response(
                 {'detail': f"La salle {salle.nom} n'accepte pas un cours de type {d.type_cours}."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -252,7 +302,9 @@ class SemaineViewSet(viewsets.ModelViewSet):
 
         # ── Conflits au créneau visé (revalidation au moment de l'application) ─
         autres = Seance.objects.filter(semaine=semaine, jour=jour, creneau=creneau)
-        if autres.filter(salle=salle).exists():
+        # Le terrain est partageable (plusieurs filières SBAA au même créneau) :
+        # on ne bloque l'occupation que pour les salles non partageables.
+        if salle.type_salle != TypeSalle.TERRAIN and autres.filter(salle=salle).exists():
             return Response({'detail': f"La salle {salle.nom} est déjà occupée à ce créneau."}, status=status.HTTP_409_CONFLICT)
         if autres.filter(filiere=d.filiere).exists():
             return Response({'detail': f"{d.filiere} a déjà un cours à ce créneau."}, status=status.HTTP_409_CONFLICT)

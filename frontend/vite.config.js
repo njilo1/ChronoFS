@@ -51,6 +51,20 @@ export default defineConfig({
     alias: { '@': path.resolve(__dirname, './src') },
   },
   server: {
+    // Écoute sur toutes les interfaces (utile pour le partage réseau/ngrok)
+    host: true,
+    // Autorise l'accès via les domaines ngrok (sinon Vite renvoie
+    // « Blocked request. This host is not allowed »).
+    allowedHosts: ['.ngrok-free.app', '.ngrok.app', '.ngrok.io'],
+    proxy: {
+      '/api': { target: 'http://localhost:8000', changeOrigin: true },
+    },
+  },
+  // Mode « preview » : sert le build de production (bundle minifié).
+  // Bien plus rapide que `dev` à travers ngrok, tout en gardant le proxy /api.
+  preview: {
+    host: true,
+    allowedHosts: ['.ngrok-free.app', '.ngrok.app', '.ngrok.io'],
     proxy: {
       '/api': { target: 'http://localhost:8000', changeOrigin: true },
     },

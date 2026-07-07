@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import useThemeStore from '../../store/themeStore';
+import { EASE_OUT } from '../../lib/motion';
 
 /**
  * PageShell — en-tête de page éditorial.
@@ -24,20 +25,20 @@ export default function PageShell({
   const theme  = useThemeStore((s) => s.theme);
   const isDark = theme === 'dark';
 
-  const titleColor    = isDark ? '#F5F4EE' : '#0B1220';
-  const subtitleColor = isDark ? '#A1A6B0' : '#5B6573';
-  const iconBg        = '#1E3A8A';
+  const titleColor    = isDark ? '#F5F4EE' : '#1C2333';
+  const subtitleColor = isDark ? '#A1A6B0' : '#667085';
+  const iconBg        = '#143894';
   const iconFg        = '#FFFFFF';
-  const ruleColor     = isDark ? '#1F2A40' : '#E5E2D8';
-  const countColor    = isDark ? '#DBBC5E' : '#8B6622';
-  const eyebrowColor  = isDark ? '#A1A6B0' : '#5B6573';
+  const ruleColor     = isDark ? '#1F2A40' : '#E6ECF7';
+  const countColor    = isDark ? '#D9BC7E' : '#8E6F38';
+  const eyebrowColor  = isDark ? '#A1A6B0' : '#667085';
 
   return (
     <div className="space-y-6">
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0  }}
-        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.32, ease: EASE_OUT }}
         className="flex items-end justify-between gap-4 flex-wrap pb-4"
         style={{ borderBottom: `1px solid ${ruleColor}` }}
       >
@@ -61,7 +62,7 @@ export default function PageShell({
             )}
             <h1
               className="heading-display flex items-baseline gap-3 flex-wrap"
-              style={{ color: titleColor, fontSize: '2rem' }}
+              style={{ color: titleColor, fontSize: 'clamp(1.5rem, 5vw, 2rem)' }}
             >
               <span>{title}</span>
               {count != null && (
@@ -99,7 +100,7 @@ export default function PageShell({
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0  }}
-        transition={{ duration: 0.4, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.4, delay: 0.08, ease: EASE_OUT }}
         className="space-y-5"
       >
         {children}

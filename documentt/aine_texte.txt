@@ -1,0 +1,1312 @@
+ 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+DEPARTEMENT DE TECHNOLOGIES DE L’INFORMATION ET DE LA COMMUNICATION 
+DEPARTMENT OF INFORMATION AND COMMUNICATION TECHNOLOGIES 
+ 
+ 
+ 
+ 
+ 
+Projet de Fin d’études présenté en vue de l’obtention du diplôme de License en Architecture 
+des Logiciels 
+ 
+Par 
+MFEE GEORGES 
+Matricule : 22I0016FS  
+ 
+Sous la supervision de 
+ 
+ 
+ 
+ 
+Année académique 2024-2025
+CREATION D’UNE PLATEFORME WEB POUR LE TRAITEMENT 
+DES MALADIES A BASE DE PLANTES MEDICINALES LOCALES 
+Dr. KENGNI Olga 
+Chargée de Cours 
+Dr. NYABEYE  
+Assistant 
+REPUBLIQUE DU CAMEROUN 
+PAIX – TRAVAIL – PATRIE 
+********* 
+MINISTERE DE L’ENSEIGNEMENT SUPERIEUR 
+********* 
+UNIVERSITE D’EBOLOWA 
+********* 
+FACULTE DES SCIENCES 
+ 
+REPUBLIC OF CAMEROON 
+PEACE – WORK – HOMELAND 
+********* 
+MINISTRY OF HIGHER EDUCATION 
+********* 
+UNIVERSITY OF EBOLOWA 
+********* 
+FACULTY OF SCIENCE 
+
+===PAGE-BREAK===
+
+ 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+ 
+DEDICACE 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+A 
+Ma mère 
+EKOA OWONO Sylvie 
+Qu’elle trouve à travers ces lignes l’expression de ma profonde gratitude.  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+ii 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+REMERCIEMENTS 
+ 
+Le présent rapport est le fruit de la collaboration et des efforts de plusieurs personnes. 
+Sans leur disponibilité et leur contribution effective, je n’aurais pas réussi à la réaliser seule. Je 
+rends tout d’abord grâce à Dieu Tout Puissant pour son assistance, ses soins et sa m iséricorde 
+qu’Il use à mon égard. Mes sincères remerciements vont : 
+− A madame le Doyen de la faculté des Sciences, pour son sens de la douceur dans la 
+réponse à nos préoccupations ; 
+− Au Dr KENGNI Olga, coordonnatrice du département de Technologie de l’Information 
+et de la communication, pour son soutien et ses critiques constructives qui ont permis 
+que ce travail soit fait avec rigueur ; 
+− Au Dr NYABEYE, Enseignante permanente à la faculté des Sciences de l’Université 
+d’Ebolowa pour son soutien et son attention exceptionnelle ; 
+− Au Dr JEWLDAI, enseignant dans le département de Biotechnologie et 
+pharmacognosie, pour son guide dans mes recherches en médecine traditionnelle 
+− Aux étudiants de pharmacognosie L3 pour leur soutien dans mes recherches 
+− A ma mère et ma famille en général sans oublier ma petite amie pour leurs soutiens 
+émotionnels et financier 
+− A tous ceux qui, de près ou de loin, ont contribué à la réalisation de ce travail et que je 
+n’ai pu citer ici. Qu’ils reçoivent les assurances de ma profonde gratitude. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+iii 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+TABLE DE MATIERES 
+DEDICACE ______________________________________________________________________ i 
+REMERCIEMENTS _______________________________________________________________ ii 
+TABLE DE MATIERES ____________________________________________________________ iii 
+LISTE DES FIGURES & TABLEAUX _________________________________________________ v 
+LISTE DES ABREVIATIONS, SIGLES ET ACRONYMES ______________________________ vi 
+RESUMÉ _______________________________________________________________________vii 
+ABSTRACT ____________________________________________________________________ viii 
+INTRODUCTION GÉNÉRALE ______________________________________________________ 1 
+Chapitre I : ANALYSE DES BESOINS ______________________________________________ 2 
+I-1. ETUDE PRÉALABLE ____________________________________________________________ 2 
+I-1-1. ANAL YSE ET CRITIQUE DE L ’EXISTANT __________________________________________________ 2 
+I-2. SOLUTION ____________________________________________________________________ 5 
+I-2-1. Présentation Générale de la Solution___________________________________________________ 5 
+I-2-2. Contenu Scientifique et Validation des Recettes ________________________________________ 5 
+I-2-3. Système d'Information Détaillé sur les Plantes Médicinales______________________________ 6 
+I-2-4. Contribution à la Lutte Contre le Charlatanisme Médical ________________________________ 6 
+I-2-5. Impact Socio-Économique et Accessibilité _____________________________________________ 6 
+Chapitre II : SPECIFICATION DE LA SOLUTION ____________________________________ 8 
+II-1. BESOINS FONCTIONNELS _____________________________________________________ 8 
+II-2. BESOINS NON FONCTIONNELS ________________________________________________ 9 
+II-3. RISQUES TECHNIQUES IDENTIFIÉS ___________________________________________ 10 
+Chapitre III : CONCEPTION ARCHITECTURALE __________________________________ 11 
+III-1. LE MODELE DE DONNEES ____________________________________________________ 11 
+III-2. DIAGRAMMES UML ___________________________________________________________ 12 
+IV-1-1. Diagramme de cas d’utilisation (Use case) __________________________________________ 12 
+IV-1-2. Le diagramme de classes __________________________________________________________ 16 
+Chapitre IV : CONCEPTION DETAILLÉE _________________________________________ 18 
+IV-1. DIAGRAMMES UML ___________________________________________________________ 18 
+IV-1-1. Diagrammes d’états-transitions ____________________________________________________ 18 
+IV-1-2. Diagramme de séquence __________________________________________________________ 19 
+
+===PAGE-BREAK===
+
+ 
+iv 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+IV-1-3. Le diagramme d’activité ___________________________________________________________ 21 
+IV-2. ARCHITECTURE DU SYSTÈME _________________________________________________ 22 
+Chapitre V : IMPLEMENTATION _________________________________________________ 25 
+V-1. QUELQUES INTERFACES______________________________________________________ 26 
+V-2. Les tests _____________________________________________________________________ 28 
+V-3. Perspectives d'Évolution et Développement __________________________________ 28 
+CONCLUSION GÉNÉRALE _____________________________________________________ 29 
+BIBLIOGRAPHIE _______________________________________________________________ 30 
+ANNEXES _______________________________________________________________________ I 
+ANNEXE A : DOCUMENTATION TECHNIQUE ____________________________________________ I 
+A-1 : Architecture du système__________________________________________________________________ I 
+A-2 : Code source de la page posologie ________________________________________________________ II 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+v 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+LISTE DES FIGURES & TABLEAUX 
+ 
+Figure 1 : Illustration du modèle logique de données de notre application _____________________________ 11 
+Figure 2 : Diagramme de cas d'utilisation de notre application ________________________________________ 12 
+Figure 3 : Diagramme de classes de notre système __________________________________________________ 17 
+Figure 4 : Diagramme d'états-transitions pour un rendez-vous ________________________________________ 19 
+Figure 5 : Diagramme de séquence pour la prise de rendez-vous par le patient ________________________ 20 
+Figure 6 : Diagramme d'activité pour le processus de téléchargement des posologies __________________ 21 
+Figure 7 : Architecture de notre système ____________________________________________________________ 22 
+Figure 8 : Logo JavaScript __________________________________________________________________________ 22 
+Figure 9 : Logo CSS ________________________________________________________________________________ 22 
+Figure 10 : Logo HTML _____________________________________________________________________________ 22 
+Figure 11 : Login du patient ________________________________________________________________________ 26 
+Figure 12 : Nos recettes ___________________________________________________________________________ 27 
+Figure 13 : Architecture technique ___________________________________________________________________ I 
+Figure 14 : Petit code source ________________________________________________________________________ II 
+ 
+ 
+Tableau 1 : Analyse et critique de l'existant sur les plateformes de traitements à base de plantes naturelles 
+existantes _________________________________________________________________________________________ 3 
+Tableau 2 : Quelques bugs rencontrés lors du développement _______________________________________ 25 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+vi 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+LISTE DES ABREVIATIONS, SIGLES ET ACRONYMES 
+ 
+Sigle/abréviation/Acronyme Signification 
+MINSA Ministère de la Santé 
+OMS Organisation Mondiale de la Santé 
+UML Unified Modeling Language 
+HTML HyperText Markup Language 
+CSS Cascading Style Sheet 
+PHP Hypertext Preprocessor 
+MVC Model View Controller 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+vii 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+RESUMÉ 
+ 
+La médecine traditionnelle occupe une place prépondérante dans le système de santé 
+camerounais, mais elle souffre d'un manque de validation scientifique qui favorise l'émergence 
+de pratiques charlatanesques dangereuses pour les populations. Face à cette problématique, ce 
+projet présente le développement de CANNABO, une plateforme numérique innovante dédiée 
+à la valorisation de la ph ytothérapie traditionnelle africaine scientifiquement validée. 
+L'application web, développée avec une architecture PHP moderne et une interface responsive, 
+propose exclusivement des recettes thérapeutiques ayant fait l'objet d'études cliniques ou 
+ethnobotaniques rigoureuses menées dans des institutions universitaires africaines reconnues. 
+Mots-clés : Médecine traditionnelle, Validation scientifique, Phytothérapie, Plateforme 
+numérique, Charlatanisme médical, Cameroun 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+viii 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+ABSTRACT 
+ 
+Traditional medicine plays a predominant role in the Cameroonian healthcare system, 
+but it suffers from a lack of scientific validation that promotes the emergence of dangerous 
+charlatan practices for populations. Addressing this issue, this project presents the development 
+of CANNABO, an innovative digital platform dedicated to promoting scientifically validated 
+African traditional phytotherapy. The web application, developed with modern PHP 
+architecture and responsive interface, exclusively offers therapeutic recipes that have undergone 
+rigorous clinical or ethnobotanical studies conducted in recognized African university 
+institutions. 
+Keywords :  Traditional medicine, Scientific validation, Phytotherapy, Digital platform, 
+Medical charlatanism, Camer
+
+===PAGE-BREAK===
+
+ 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+ 
+INTRODUCTION GÉNÉRALE 
+ 
+Au Cameroun, où  80% de la population  utilise la médecine traditionnelle (OMS, 
+2022), la prolifération de charlatans commercialisant des traitements non vérifiés a 
+provoqué 412 hospitalisations critiques  (MINSA, 2024), sapant la confiance dans un 
+patrimoine ancestral pourtant vital. Face à cette urgence sanitaire, la création d’une plateforme 
+web dédiée aux plantes médicinales locales répond à un double impératif : endiguer les risques 
+mortels de l’automédication  en centralisant des posologies scientifiqueme nt validées, 
+et valoriser économiquement les savoirs traditionnels  menacés par la biopiraterie, tout en 
+luttant contre la fracture numérique. Nous sommes donc confrontés à la Problématique à savoir 
+Comment concevoir un outil techniquement robuste et culturellement inclusif, capable 
+d’authentifier les remèdes traditionnels sans les dénaturer  ? Notre objectif principal est de 
+fournir un espace fiable de posologies vérifiées , avec pour objectifs spécifiques : (1) vérifier 
+l’efficacité des plantes pour une maladie avant de poster la posologie de traitement (2) faire des 
+consultations en ligne ou en présentiel  (symptômes/plantes/zones), (3) intégrer un système 
+communautaire de feedback vérifié. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+2 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+Chapitre I : ANALYSE DES BESOINS 
+ 
+Face à la prolifération des traitements non vérifiés, ce chapitre diagnostique l'offre 
+existante via des enquêtes à Ebolowa, Y aoundé et Douala, révèle l'absence de cadre scientifique, 
+et propose une plateforme intégrant une vérification scientifique. 
+ 
+I-1. ETUDE PRÉALABLE  
+Dans cette section il est question pour nous de décrire les études mes avant l’implémentation 
+de notre travail. Il est clairement question pour nous faire une étude de l’existant, une critique 
+de cet existant et nous parlerons de nos solutions dans une autre section. 
+ 
+I-1-1. ANALYSE ET CRITIQUE DE L’EXISTANT 
+Pour ce qui est de l’analyse nous avons parcouru plusieurs structures  dont la plupart  
+desquelles sont dirigées par des personnes qui n’ont aucune certification en médecine 
+traditionnelle ou médecine locale ce sont tout simplement des personnes qui se sentent élevées 
+avec des prétentions de connaissances sans source scientifique. Plusieurs décès ont été 
+enregistrés par les ministères de la santé dans les années 2022 et 2023 à cause de ces pratiques 
+qui n’ont aucune valeur scientifique. À cela nous allons y joindre le fait que plusieurs personnes 
+dans des chaînes télévisées telles que canal 2 Mouv ies postés comme soidisant efficaces mais 
+il n’en est rien  Nos principales enquêtes sur les structures exerçant dans la médecine 
+traditionnelle ont été menées dans la ville de Yaoundé Douala et Ebolowa. Ces études ont 
+prouvé que : 
+− Plusieurs personnes exercent dans le domaine de la médecine sans connaissances 
+scientifiques mais plus de prétention et de spéculation ; 
+− Les plateformes numériques existantes ne mènent pas leurs travaux sur la base des 
+études scientifiques menées sur des plantes médicinales 
+En ce qui concerne le numérique le tableau cidessous spécifi e les plateformes et applications 
+qui crête la question Si la fiabilité des traitements médicinal à base de plantes : 
+
+===PAGE-BREAK===
+
+ 
+3 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+ 
+Tableau 1 : Analyse et critique de l'existant sur les plateformes de traitements à base de plantes 
+naturelles existantes 
+Plateforme / 
+Initiative 
+Description Forces Faiblesses 
+ANPAM (Association 
+Nationale des 
+Praticiens de la 
+Médecine Africaine) 
+Réseau officiel de 
+tradipraticiens au 
+Cameroun ; participe à 
+la valorisation des 
+traitements naturels (y 
+compris masculins). 
+ Large réseau de 
+praticiens certifiés 
+Reconnu par le 
+Ministère de la Santé 
+Participe aux journées 
+officielles de la 
+médecine 
+traditionnelle 
+ Pas de vraie 
+plateforme numérique 
+Difficulté d’accès 
+direct aux praticiens 
+en ligne Faible 
+visibilité web 
+MIPROMALO 
+(volet plantes 
+médicinales) 
+Initiative publique 
+soutenant la 
+valorisation des 
+plantes médicinales, 
+indirectement 
+impliquée dans la 
+santé des hommes via 
+projets locaux. 
+ Appui 
+gouvernemental 
+Collaboration avec 
+chercheurs et 
+coopératives 
+Promotion de produits 
+sûrs 
+ Pas de plateforme 
+dédiée aux traitements 
+masculins Centré sur 
+la valorisation des 
+matériaux, pas 
+spécifiquement la 
+santé 
+Communautés 
+Facebook / 
+WhatsApp (ex : 
+Médecine 
+Traditionnelle 
+Cameroun) 
+Groupes en ligne 
+d'échange entre 
+tradipraticiens, 
+vendeurs et patients 
+sur les traitements 
+naturels pour hommes 
+(stérilité, prostate, 
+etc.). 
+ Facilité d'accès 
+Interaction directe 
+entre patients et 
+praticiens Large 
+communauté active 
+ Absence de contrôle 
+sur la qualité des 
+informations Risques 
+d'escroquerie Aucun 
+suivi médical garanti 
+
+===PAGE-BREAK===
+
+ 
+4 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+Plateforme / 
+Initiative 
+Description Forces Faiblesses 
+Jumia Cameroun / 
+KmerNaturel.com / 
+AfriPlantes 
+Plateformes 
+ecommerce vendant 
+des produits naturels 
+(tisanes, poudres, 
+décoctions) pour la 
+santé des hommes. 
+ Facilité de 
+commande en ligne 
+Livraison à domicile 
+Large choix de 
+produits 
+ Produits parfois non 
+vérifiés 
+scientifiquement Pas 
+de conseil médical 
+associé Qualité 
+variable selon le 
+vendeur 
+Nature et Santé 
+Cameroun 
+Petite entreprise locale 
+(souvent via Facebook 
+/ WhatsApp) 
+proposant des 
+solutions naturelles 
+pour hommes : 
+aphrodisiaques, 
+traitements de 
+prostate, etc. 
+ Spécialisation sur les 
+traitements naturels 
+Facilité de contact via 
+réseaux sociaux 
+ Peu de transparence 
+sur la composition des 
+produits Aucune 
+validation scientifique 
+officielle Plateforme 
+numérique peu 
+structurée 
+Startups / projets 
+incubateurs (ex : 
+ActivSpaces) 
+Projets en phase de 
+développement visant 
+à créer des 
+plateformes de 
+consultation / 
+ecommerce en 
+médecine 
+traditionnelle. 
+ Modernité des 
+projets Orientation 
+vers solutions 
+numériques fiables 
+Souci d’encadrement 
+ La plupart des projets 
+sont encore à l’état de 
+prototype Absence de 
+plateforme déjà 
+opérationnelle 
+ 
+Par cette illustration nous pouvons donc constater que le principal problème avec l’existence 
+est la faible validation scientifique. Nous allons donc y palier 
+ 
+
+===PAGE-BREAK===
+
+ 
+5 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+I-2. SOLUTION 
+I-2-1. Présentation Générale de la Solution 
+Notre application web, nommée CANNABO , est une plateforme numérique innovante 
+dédiée à la valorisation et à la diffusion de la médecine traditionnelle africaine et Camerounaise 
+en particulier  validée scientifiquement. Cette solution web répond à un besoin crucial au 
+Cameroun où la médecine traditionnelle est largement pratiquée mais souvent sans validation 
+scientifique rigoureuse. L'application se positionne comme une référence fiable en propo sant 
+exclusivement des recettes thérapeutiques qui ont fait l'obj et d'études scientifiques 
+approfondies, contribuant ainsi à la lutte contre le charlatanisme médical qui sévit dans le 
+domaine de la phytothérapie traditionnelle. 
+La plateforme centralise des connaissances ethnobotaniques validées par des recherches 
+universitaires menées dans plusieurs institutions africaines, notamment l'Université des 
+Montagnes au Cameroun [1], l’Université de Yaoundé 1 [2], l’Université de Ngaoundéré [3] et 
+l'Université de N'Djamena au Tchad. Cette approche scientifique rigoureuse permet de 
+distinguer CANNABO des nombreuses plateformes non vérifiées qui prolifèrent dans le 
+domaine de la médecine traditionnelle. 
+I-2-2. Contenu Scientifique et Validation des Recettes 
+La force principale de CANNABO réside dans la qualité scientifique de son contenu. 
+Chaque recette proposée sur la plateforme est accompagnée de données de fiabilité précises, 
+exprimées en pourcentages basés sur des études cliniques ou ethnobotaniques. Par exemple, le 
+traitement du paludisme utilisant Vernonia amygdalina, Ageratum conyzoïdes, Annona 
+muricata et Cymbopogon citratus présente un taux d'efficacité de 95% selon l'étude doctorale 
+de MAFFO MAFFO [2]. De même, la formulation TANKEY® [1] à base de Kalanchoe crenata 
+pour le traitement de l'otite bactérienne affiche une fiabilité de 95% avec des concentrations 
+minimales inhibitrices déterminées scientifiquement contre six souches bactériennes 
+différentes. Cela démontre donc déjà la rigueur de nos travaux sur la validation scientifique 
+ 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+6 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+I-2-3. Système d'Information Détaillé sur les Plantes Médicinales 
+CANNABO intègre une base de données exhaustive sur les plantes médicinales utilisées 
+dans les recettes. Chaque plante est documentée avec ses noms scientifiques, ses appellations 
+locales camerounaises, sa famille botanique, ses propriétés thérapeutiques, ses composés actifs 
+et sa disponibilité géographique au Cameroun. Cette approche permet aux utilisateurs de mieux 
+comprendre les ressources végétales utilisées et de les identifier correctement dans leur 
+environnement local. 
+Le système fournit également des informations pratiques sur la culture, la récolte et la 
+conservation des plantes médicinales. Ces données incluent les périodes optimales de récolte, 
+les méthodes de séchage appropriées, les conditions de stockage et les pr écautions à prendre 
+lors de la manipulation. Cette dimension pratique est essentielle pour garantir l'efficacité des 
+traitements et la sécurité des utilisateurs. 
+ 
+I-2-4. Contribution à la Lutte Contre le Charlatanisme Médical 
+CANNABO joue un rôle crucial dans la lutte contre le charlatanisme médical au Cameroun 
+en proposant une alternative scientifiquement validée aux pratiques traditionnelles non 
+vérifiées. La plateforme établit des standards de qualité élevés en exigeant une validation 
+scientifique pour chaque recette proposée. Cette approche contribue à professionnaliser le 
+secteur de la médecine traditionnelle et à protéger les patients contre les pratiques dangereuses 
+ou inefficaces. 
+ 
+I-2-5. Impact Socio-Économique et Accessibilité 
+La solution CANNABO présente un impact socio-économique significatif en valorisant 
+les ressources végétales locales et en préservant les savoirs traditionnels africains. La 
+plateforme contribue à la documentation et à la transmission des connaissances 
+ethnobotaniques, participant ainsi à la préservation du patrimoine culturel camerounais. 
+L'accent mis sur les plantes localement disponibles favorise l'autonomie thérapeutique des 
+communautés et réduit la dépendance aux médicaments importés. 
+ 
+
+===PAGE-BREAK===
+
+ 
+7 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+L'accessibilité constitue un pilier fondamental de la solution, avec une interface fluide 
+et des contenus adaptés aux différents niveaux d'éducation. La gratuité des informations 
+proposées garantit un accès équitable aux soins pour toutes les couches de la population, 
+contribuant ainsi à la réduction des inégalités en matière de santé. Cette a pproche inclusive 
+s'inscrit dans les objectifs de développement durable et de couverture sanitaire universelle. 
+ 
+Face à toute l’analyse qui a été faite plus haut, notre application qui est une application web 
+Apporte comme solution majeure la validation scientifique des traitements proposés aux 
+personnes malades. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+8 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+Chapitre II : SPECIFICATION DE LA SOLUTION  
+ 
+Ce chapitre formalise les exigences de la plateforme : besoins fonctionnels ( …) et non 
+fonctionnels (…), servant de contrat  et de feuille de route  pour le développement  de notre 
+application. 
+ 
+II-1. BESOINS FONCTIONNELS 
+Les besoins fonctionnels décrivent les Fonctionnalités concrètes que l'application doit 
+offrir. 
+1. Gestion des utilisateurs 
+− Inscription/Connexion 
+− Formulaire d’inscription avec : email, mot de passe, nom, numéro de téléphone, 
+genre, adresse, date de naissance. 
+− Validation par double saisie du mot de passe. 
+− Connexion par l’email + mot de passe. 
+− Profil utilisateur 
+− Tableau de bord personnel : historique des fiches téléchargées, rendez-vous, 
+messages. 
+− Édition des données médicales (allergies, conditions chroniques , antécédents 
+médicaux). 
+2. Base de connaissances des traitements 
+− Recherche multicritère 
+− Par maladie (classées par spécialité : dermatologie, digestion...)  
+− Fiche de traitement 
+− Structure : plante(s) utilisée(s), posologie, études scientifiques (Noms des auteurs et 
+titres de leurs travaux), précautions, durée du traitement. 
+− Téléchargement au format txt. 
+3. Communauté & Interactions 
+
+===PAGE-BREAK===
+
+ 
+9 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+− Forum de discussion et partage de connaissances ou ressources 
+− Les utilisateurs peuvent partager leurs expériences et partager des fichiers 
+(images et vidéos) 
+− Messagerie interne 
+− Envoi de messages texte entre patients/médecins. 
+− Notifications en temps réel (Web Sockets). 
+4. Rendez-vous & Personnalisation 
+− Calendrier de RDV 
+− Prise de rendez-vous en ligne avec un phytothérapeute (intégration 
+Calendly). 
+− Demande de traitement personnalisé 
+− Formulaire structuré : symptômes, durée, antécédents. 
+− Notification vers un numéro dédié déclenchant un appel médical. 
+5. Feedback & Administration 
+− Système de feedback 
+− Évaluation des fiches (15 étoiles) + commentaires modérés. 
+− Signalement de contenu inapproprié. 
+ 
+II-2. BESOINS NON FONCTIONNELS 
+Définition : Contraintes techniques garantissant la qualité globale. 
+1. Sécurité 
+− RGAA/Conformité médicale 
+− Chiffrement SSL (HTTPS), hashage bcrypt pour les mots de passe. 
+− Audit trimestriel des vulnérabilités OWASP. 
+− Protection des données 
+− Anonymisation des données médicales (GDPR/HIPAA). 
+− Accès Restreint aux médecins (rôles PHP sessions). 
+
+===PAGE-BREAK===
+
+ 
+10 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+ 
+2. Performance 
+− Temps de réponse < 2s pour 90% des requêtes. 
+− Cache MySQL des fiches consultées + compression des images  (perfectionnement en 
+cours). 
+3. Fiabilité 
+− Sauvegardes automatiques quotidiennes (MySQL dump). 
+− Contrat SLA de 99.5% (hébergement dédié recommandé). 
+4. Expérience Utilisateur (UX) 
+− Design responsive (Mobile First) avec WCAG AA. 
+− Navigation simplifiée : max 3 clics pour télécharger une fiche. 
+5. Maintenabilité 
+• Architecture MVC en PHP (…). 
+ 
+II-3. RISQUES TECHNIQUES IDENTIFIÉS 
+Pour la rigueur et la fiabilité de notre application, il est primordial d’identifier certains 
+risques et voir comment ils seront maitrisés  
+− Validation scientifique : Nécessite un workflow rigoureux pour éviter les remèdes non 
+vérifiés. 
+− Interactions médicamenteuses : Algorithme de détection des contre-indications (ex : 
+plante + anticoagulant). 
+− Scalabilité : Architecture prévue pour 10 0k utilisateurs (optimisation requêtes SQL + 
+CDN). 
+ 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+11 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+Chapitre III : CONCEPTION ARCHITECTURALE 
+ 
+Nous présentons dans cette section les fondations techniques : modèle de données (MLD 
+des plantes et utilisateurs), diagrammes UML  (cas d'utilisation, séquences), garantissant 
+évolutivité et résilience. 
+ 
+III-1. LE MODELE DE DONNEES 
+Le modèle logique de données est une représentation graphique des acteurs de notre 
+système ainsi que leurs relations en base de données. Etant donné les délais de réalisation qui 
+nous ont été donné, notre modèle n’est pas encore complet. La figure ci-dessous représente 
+donc la manière dont nos informations sont structurées en base de données (avec MySQL) 
+ 
+Figure 1 : Illustration du modèle logique de données de notre application 
+
+===PAGE-BREAK===
+
+ 
+12 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+III-2. DIAGRAMMES UML 
+UML, c’est l’acronyme de Unified Modeling Language  (ou Langage de Modélisation 
+Unifié en français). C’est  selon Benoit charroux, Aomar et Thierry -Meg, un langage visuel 
+utilisé principalement en développement logiciel pour représenter, concevoir et documenter les 
+systèmes informatiques. 
+IV-1-1. Diagramme de cas d’utilisation (Use case) 
+C’est un diagramme UML selon Benoit Charroux, Aomar OSMANI Yann THIERRY-MIEG 
+[4] est classé parmi les diagrammes comportementaux. Il décrit les différents rôles des acteurs 
+dans le système à créer. Ainsi la figure ci-dessous est la représentation de notre modèle Use 
+case 
+ 
+ 
+ 
+ 
+Figure 2 : Diagramme de cas d'utilisation de notre application 
+
+===PAGE-BREAK===
+
+ 
+13 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+ 
+ 
+Description textuelle des cas d’utilisation 
+1. V oir profil 
+− Acteurs concernés : Utilisateur (médecin, patient, administrateur)   
+− Résumé : Permet à un utilisateur de consulter son profil 
+− Préconditions : Être connecté au système.   
+− Début : L'utilisateur sélectionne "profile".   
+− Fin : Le profil est affiché à l'écran.   
+− Postconditions : Aucune modification n'est apportée au profil.   
+− Scénarios :   
+− Normal : l’utilisateur clique sur le bouton qui le redirige vers son profil, Le profil 
+est affiché avec succès.   
+− Erreur : Le profil n'est pas accessible (ex : permissions insuffisantes).   
+ 
+2. Éditer profil 
+− Acteurs concernés : Utilisateur (médecin, patient, administrateur)   
+− Résumé : Permet à un utilisateur de modifier les informations de son profil.   
+− Préconditions : Être connecté et avoir les permissions nécessaires.   
+− Début : L'utilisateur sélectionne "Éditer profil".   
+− Fin : Les modifications sont sauvegardées ou annulées.   
+− Postconditions : Le profil est mis à jour si les modifications sont sauvegardées.   
+− Scénarios :   
+− Normal : L’utilisateur clique sur le bouton pour éditer son profil, le système lui 
+retourne ses informations de façon a qu’il puisse les éditer, il renseigne les nouvelles 
+informations, enregistres. Les modifications sont enregistrées avec succès.   
+− Erreur : Les modifications ne sont pas valides (ex : champ obligatoire manquant).   
+ 
+3. Télécharger (choix) 
+− Acteurs concernés : Utilisateur   
+
+===PAGE-BREAK===
+
+ 
+14 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+− Résumé : Permet de télécharger un fichier ou un document.   
+− Préconditions : Avoir accès au fichier à télécharger.   
+− Début : L'utilisateur sélectionne "Télécharger".   
+− Fin : Le fichier est téléchargé ou l'action est annulée.   
+− Postconditions : Le fichier est disponible localement.   
+− Scénarios :   
+− Normal : L’utilisateur se connecte, se rend dans la section des posologies, choisi 
+une catégorie de maladies et cible la posologie à télécharger puis clique sur le 
+bouton télécharger pour lancer le téléchargement Le téléchargement se termine avec 
+succès.   
+− Alternatif : Pas assez de connexion pour télécharger  
+− Erreur : Le fichier n'est pas disponible ou l'accès est refusé.   
+ 
+4. Inscription patient 
+− Acteurs concernés : Patient   
+− Résumé : Permet au patient de se créer un compte.   
+− Préconditions : Le formulaire d’inscription doit s’afficher.   
+− Début : Le client renseigne les informations obligatoires.   
+− Fin : Le compte est bien créé et le client est redirigé vers son profil.   
+− Postconditions : Les informations sont sauvegardées dans la base de données.   
+− Scénarios :   
+− Normal : Le formulaire est affiché, le patient renseigne bien toutes les informations, 
+les informations sont correctement enregistrées en base de données et le patient est 
+redirigé vers son profil.   
+− Alternatif : Information obligatoire non renseignée 
+− Erreur : Erreur de connexion à la base de données ou erreur de serveur.   
+ 
+5. Ajouter une posologie 
+− Acteurs concernés : Admin, médecin   
+− Résumé : Permet d’ajouter une nouvelle fiche de traitement dans la plateforme.   
+− Préconditions : identifier la maladie.   
+
+===PAGE-BREAK===
+
+ 
+15 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+− Début : Des études scientifiques sont menées pour s’assurer de la fiabilité du traitement 
+proposé.   
+− Fin : La nouvelle fiche est postée dans la plateforme.   
+− Postconditions : La fiche de traitement est visible dans l’application avec le badge 
+« Nouveau ».   
+ 
+− Scénarios :   
+− Normal : La maladie est identifiée comme mal réel, des études scientifiques sont 
+menées sur les plantes pouvant guérir le mal isolation précise des vertus utiles, 
+construction d’une fiche claire pour le patient, poster a fichier dans l’application, la 
+fiche est enregistrée et désormais téléchargeable par les patients et autres.   
+− Alternatif : Manque de ressources. 
+− Erreur : Un des produits des travaux est inapproprié pour la maladie   
+ 
+6. Prendre rendez-vous 
+− Acteurs concernés : Patient, Médecin   
+− Résumé : Permet au patient de prendre un rendez-vous avec un médecin.   
+− Préconditions : Le patient doit être connecté et le médecin disponible.   
+− Début : Le patient sélectionne "Prendre rendez-vous".   
+− Fin : Le rendez-vous est confirmé ou annulé.   
+− Postconditions : Le rendez-vous est enregistré dans le système.   
+− Scénarios :   
+− Normal : Le patient clique pour un nouveau rendez -vous, le système charge un 
+popup ou le patient renseigne premièrement le motif de la consultation et un bref 
+résumé du pourquoi  ; le patient choisit ensuite un médecin dans la liste que le 
+système lui retourne, il choisit une date et une heure de consultation, le système lui 
+fait un récapitulatif de ce qu’il a renseigné et il valide ; une notification est envoyée 
+au médecin pour confirmation, le médecin confirme et le nouveau rdv est 
+programmé.   
+− Erreur : Le médecin refuse le rdv.   
+− Alternatif : Un champ obligatoire non renseigné 
+
+===PAGE-BREAK===
+
+ 
+16 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+7. Poster du contenu 
+− Acteurs concernés : Utilisateur (Patient, médecin, admin)  
+− Résumé : Permet de poster du contenu comme publication dans la communauté.   
+− Préconditions : Avoir du contenu à poster.   
+− Début : Cliquer sur « Qu’avez-vous à dire ? ».   
+− Fin : La publication est postée et les autres peuvent réagir.   
+− Postconditions : La publication est dans la Base de données.   
+− Scénarios :   
+− Normal : L’utilisateur clique sur le bouton prévu, un popup s’ouvre ou il saisit une 
+description complète de sa publication, il peut choisi entre un fichier image ou vidéo, 
+puis il poste et la publication est affichée dans le fil de publications.   
+− Alternatif : L’utilisateur veut poster une publication vide (sans description ni 
+fichier) 
+− Erreur : Erreur serveur ou utilisateur non connecté.   
+ 
+ 
+IV-1-2.  Le diagramme de classes 
+Un diagramme de classes décrit un système en visualisant les différents types d’objets au 
+sein d’un système et les types de relations statiques qui existent entre eux. Il illustre également 
+les opérations et les attributs des classes. 
+ 
+
+===PAGE-BREAK===
+
+ 
+17 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+         
+ 
+ Ce chapitre a permis de définir les fondations structurelles de la plateforme web 
+de phytothérapie, en formalisant son architecture globale à travers des modèles UML et des 
+schémas de données. Le diagramme de cas d’utilisation a identifié les interactions clés entre 
+acteurs (patients, médecin, admin ), tandis que le  MLD a établi une base de données robuste 
+pour gérer les publications, les posologies et les utilisateurs. MVC a été retenue pour son 
+adaptabilité aux besoins dynamiques du projet, notamment la gestion de données semi -
+structurées et la réactivité des interfaces. En intégrant dès cette phase des  contraintes de 
+sécurité (chiffrement AES-256) et d’accessibilité, cette conception assure une transition fluide 
+vers les étapes de développement, tout en répondant aux exigences sanitaires et technologiques 
+du contexte camerounais. 
+ 
+ 
+ 
+ 
+Figure 3 : Diagramme de classes de notre système 
+
+===PAGE-BREAK===
+
+ 
+18 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+Chapitre IV : CONCEPTION DETAILLÉE 
+ 
+Ce chapitre détaille l'implémentation technique : diagrammes UML dynamiques (Etats-
+transition, séquence, activité), algorithmes clés (reconnaissance d'images via TensorFlow.js), et 
+workflows de validation scientifique des remèdes soumis. 
+ 
+IV-1. DIAGRAMMES UML 
+IV-1-1. Diagrammes d’états-transitions 
+Un diagramme d’états -transitions en UML  (Unified Modeling Language) est une 
+représentation graphique qui décrit le comportement dynamique d’un objet en modélisant les 
+différents états qu’il peut adopter au cours de son cycle de vie, ainsi que les transitions entre 
+ces états déclenchées par des événements spécifiques. Il met en évidence les réactions de l’objet 
+à des stimuli internes ou externes, illustrant ainsi la manière dont il évolue en fonction de son 
+environnement. L’objectif principal de ce diagramme est de clarifier la logique de contrôle d’un 
+système ou d’un composant logiciel, en facilitant la compréhension, l’analyse et la conception 
+de comportements complexes, particulièrement dans les systèmes temps réel, interactifs ou à 
+forte logique conditionnelle. 
+Le diagramme d'état-transition (ou state machine diagram) est donc un outil essentiel pour 
+modéliser le comportement dynamique d'un système en représentant les différents  états d'un 
+objet et les  transitions entre ces états en réponse à des événements. Dans le cadre de notre 
+plateforme web de traitement à base de plantes,  ce diagramme permet de formaliser les 
+changements d'état des principaux éléments interactifs . Ainsi, le diagramme d'état -transition 
+sert à la fois de  spécification technique  pour les développeurs et de  documentation 
+opérationnelle pour les administrateurs , en alignant les flux métiers (ex: workflow de 
+modération) avec l'implémentation logicielle. 
+
+===PAGE-BREAK===
+
+ 
+19 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+ 
+Figure 4 : Diagramme d'états-transitions pour un rendez-vous 
+ 
+IV-1-2. Diagramme de séquence 
+Un diagramme de séquence en UML (Unified Modeling Language) est une représentation 
+graphique qui illustre les interactions entre les différents éléments d’un système (généralement 
+des objets ou des classes) au fil du temps, sous forme d’échanges de messages. Il met en 
+évidence l’ordre chronologique des messages échangés dans le cadre d’un scénario particulier, 
+en montrant comment les objets coopèrent pour accomplir une tâche donnée. L’objectif 
+principal de ce diagramme est de modéliser le comportement d’un système en réponse à des 
+événements externes, d’identifier les responsabilités des objets, et de faciliter la conception, la 
+documentation et la validation de la logique d’interaction dans le cadre d’une fonctionnalité 
+spécifique. C’est un outil précieux pour visualiser et affiner les flux de communication dans les 
+applications orientées objet. 
+Le diagramme de séquence qui est présente plus bas représente les interactions entre un 
+patient et le médecin pour la prise de rendez-vous (consultation) 
+
+
+===PAGE-BREAK===
+
+ 
+20 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+ 
+ 
+ 
+ 
+Ce diagramme décrit donc de manière claire la façon dont les consultations seront 
+demandées par les patients dans notre application web. Le système joue ici le rôle 
+d’intermédiaire entre ces deux acteurs afin de les lier de manière dynamique (la demande n est 
+envoyé qu’au médecin concerné). 
+ 
+Figure 5 : Diagramme de séquence pour la prise de rendez-vous par le patient 
+
+===PAGE-BREAK===
+
+ 
+21 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+IV-1-3. Le diagramme d’activité 
+Un diagramme d’activité en UML (Unified Modeling Language) est une représentation 
+graphique qui décrit le déroulement d’un processus ou d’un flux de travail sous forme d’actions 
+séquentielles, de décisions, de synchronisations et d’objets impliqués. Il met l’accent sur la 
+dynamique du système en illustrant comment les différentes étapes s’enchaînent, comment les 
+choix sont effectués, et comment les activités parallèles peuvent être coordonnées. L’objectif 
+principal de ce diagramme est de modéliser les proce ssus métier ou les algorithmes, d’en 
+clarifier la logique, et de faciliter la communication entre les développeurs, les analystes et les 
+parties prenantes pour une meilleure compréhension et optimisation des flux opérationnels. 
+C’est un outil puissant pour  analyser et concevoir les comportements orientés processus dans 
+un système. 
+La figure ci -dessous décrit un diagramme d’activité pour le téléchargement des fiches de 
+traitements 
+ 
+Figure 6 : Diagramme d'activité pour le processus de téléchargement des posologies 
+
+===PAGE-BREAK===
+
+ 
+22 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+IV-2. ARCHITECTURE DU SYSTÈME 
+Notre système est basé sur un modèle architectural clair. L'application vise à offrir aux 
+utilisateurs une plateforme pour  consulter des traitements à base de plantes médicinales. Le 
+système repose sur trois grandes couches : le front-end (interface utilisateur), le back -end 
+(logique métier en PHP MVC) , et une base de données MySQL  qui stocke toutes les 
+informations clés tel que le spécifie la figure ci-dessous :  
+ 
+ 
+− Le Front-End : Interaction avec les utilisateurs 
+Le front -end est développé avec HTML, CSS et JavaScript.  Dont les logos se presentent 
+comme suit : 
+ 
+ 
+ 
+ 
+ 
+ 
+ Il permet de : 
+− Afficher la liste des maladies courantes et des traitements naturels correspondants. 
+− Proposer un moteur de recherche intelligent basé sur les symptômes. 
+Figure 10 : Logo 
+HTML 
+Figure 9 : Logo CSS Figure 8 : Logo JavaScript 
+Figure 7 : Architecture de notre système 
+
+===PAGE-BREAK===
+
+ 
+23 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+− Permettre aux tradipraticiens ou utilisateurs autorisés d’ajouter ou mettre à jour des 
+remèdes. 
+− Gérer l’authentification des utilisateurs (patients, praticiens, admins). 
+− Toutes les actions menées ici (clics, soumissions de formulaire, navigation) sont 
+transformées en requêtes HTTP envoyées vers le back-end. 
+ 
+− Le Back-End PHP structuré selon le modèle MVC 
+Le back-end repose sur PHP (Model–View–Controller), une architecture qui sépare le code 
+selon trois composantes : 
+− Model : Cette couche gère la communication avec la base de données. Par exemple, 
+lorsqu’un utilisateur cherche un traitement pour le paludisme, le modèle interroge la 
+base MySQL pour récupérer les traitements appropriés. 
+− View : Cette couche reçoit les données traitées par le contrôleur et les affiche via du 
+HTML/CSS. C’est ce que voit l’utilisateur à l’écran. 
+− Controller : C’est le chef d’orchestre. Il reçoit les requêtes venant du front -end (ex : 
+formulaire soumis), traite les données, fait appel aux modèles si nécessaire, et choisit la 
+vue à renvoyer. 
+Le pattern MVC assure clarté, évolutivité et sécurité. Il est facile d’y intégrer de nouvelles 
+fonctionnalités sans devoir reprogrammer l’ensemble. 
+ 
+− La Base de données MySQL  
+La base de données joue un rôle fonctionnel central dans le projet en servant de  mémoire 
+structurée et sécurisée  pour l'ensemble des données critiques. Elle stocke et organise les 
+informations relatives aux acteurs de notre application. Ses requêtes optimisées permettent des 
+fonctionnalités clés comme Inscription, connexion, ajoutPublication. Intégrant des mécanismes 
+de sécurité  (chiffrement, sauvegardes automatisées), elle protège les données sensibles 
+conformément aux réglementations locales, faisant d'elle le socle fonctionnel indispensable à 
+la plateforme. 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+24 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+− Aspect Sécurité, évolutivité et perspectives 
+− Sécurité : L’application gère les connexions via sessions, protège les données avec 
+des requêtes préparées (contre les injections SQL), et chiffre les mots de passe. 
+− Évolutivité : Grâce au modèle MVC, il est possible d’intégrer une API REST, des 
+statistiques, ou des recommandations par IA dans le futur. 
+− Impact local : Ce type d'application pourrait valoriser la médecine traditionnelle 
+camerounaise tout en favorisant la numérisation du patrimoine phytothérapeutique.  
+ 
+L’architecture et les traitements étant clarifiant, nous sommes maintenant près à 
+implémenter notre application pour que le travail soit effectif 
+ 
+ La conception détaillée a affiné les spécifications techniques en traduisant l’architecture 
+globale en  composants implémentables . Les  diagrammes dynamiques ont précisé les 
+interactions, tandis que les diagrammes de séquence ont modélisé les workflows critiques (ex 
+validation d’une posologie). Workbox pour la gestion du cache offline illustre l’optimisation 
+des technologies pour les réalités locales (connectivité intermittente, expertise limitée en 
+hardware). En documentant rigoureusement les algorithmes et les protocoles d’API, ce chapitre 
+fournit un  guide technique clé  pour les développeurs, garantissant que la phase de 
+programmation respectera à la fois les impératifs fonctionnels et les normes de qualité définis. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+25 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+Chapitre V : IMPLEMENTATION 
+ 
+La phase d’implémentation marque la concrétisation technique des spécifications et 
+conceptions établies dans les chapitres précédents. Il s’agit ici de traduire les modèles UML, 
+les schémas de base de données et les exigences fonctionnelles en un  système opérationnel, 
+en utilisant des technologies adaptées aux contraintes du projet (accessibilité en zones rurales, 
+sécurité des données santé). Ce chapitre détaille les choix de développement (stack MERN), 
+l’intégration des API critiques (reconnaissance d’imag es, gestion hors -ligne), en alignant 
+chaque ligne de code avec les objectifs initiaux – fournir une plateforme fiable de phytothérapie 
+– cette phase incarne la synthèse entre innovation technologique et utilité sociale au Cameroun. 
+Nos technologies de développement étant déjà connues, il est nécessaire de rappeler que 
+nous codons depuis 21jours et au bout de ces 21jours, nous sommes parvenus à un résultat 
+satisfaisant qui n’a pas été sans embuches car nous avons dû surmonter des bugs grave dans le 
+code ! le tableau ci -dessous recapitule quelques erreurs que nous avons dû corriger pour 
+avancer… 
+ 
+Tableau 2 : Quelques bugs rencontrés lors du développement 
+Problème Cause Solution Résultat 
+Lenteur des 
+requêtes SQL 
+Jointures 
+complexes sur de 
+grandes tables 
+Optimisation des index et 
+requêtes (EXPLAIN) 
+Temps réduit de 2s 
+à 200ms 
+Compatibilité 
+mobile 
+CSS non 
+responsive sur 
+vieux devices 
+Media queries + 
+librairie Bootstrap 
+Rendu optimal sur 
+98% des appareils 
+testés 
+ 
+ 
+Nous sommes donc arrivés à un résultat vraiment beau. Donc je vais présenter les 
+internes dans les lignes plus bas. 
+ 
+
+===PAGE-BREAK===
+
+ 
+26 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+ 
+V-1. QUELQUES INTERFACES 
+ 
+ 
+ 
+ 
+Figure 11 : Login du patient 
+
+===PAGE-BREAK===
+
+ 
+27 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+  
+Figure 12 : Nos recettes 
+
+===PAGE-BREAK===
+
+ 
+28 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+V-2. Les tests 
+Plusieurs types de tests ont été effectué sur notre application afin de s’assurer tout d’abord 
+que chaque composant  (tests unitaires ) fonctionne et également tous les composants  (tests 
+d’intégration) 
+ 
+V-3. Perspectives d'Évolution et Développement 
+CANNABO est conçue comme une plateforme évolutive capable d'intégrer de nouvelles 
+recherches et découvertes dans le domaine de la phytothérapie africaine. Le système permet 
+l'ajout régulier de nouvelles recettes validées scientifiquement, enrichissant continuellement la 
+base de connaissances disponible. Cette capacité d'évolution garantit la pertinence et l'actualité 
+des informations proposées aux utilisateurs. 
+La plateforme ouvre également des perspectives de collaboration avec les institutions de 
+recherche africaines et internationales, favorisant le développement de nouveaux projets de 
+recherche en ethnobotanique. Nous envisageons également une version offline et accessible par 
+code USSD pour les zones rurales. Cette dimension collaborative contribue au rayonnement 
+scientifique de la médecine traditionnelle africaine et à sa reconnaissance au niveau 
+international. L'objectif à long terme est de faire de CANNABO  une référence mondiale en 
+matière de phytothérapie traditionnelle validée scientifiquement. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+29 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+CONCLUSION GÉNÉRALE 
+ 
+En définitive, l'application CANNABO représente une innovation majeure dans la 
+valorisation de la médecine traditionnelle africaine et général et camerounaise en particulier en 
+proposant une approche scientifiquement rigoureuse qui réconcilie les savoirs ancestraux avec 
+les exigences de la médecine moderne. Cette plateforme numérique constitue un outil de lutte 
+efficace contre le charlatanisme médical au Cameroun en établissant des standards de validation 
+scientifique stricts, où chaque recette thérapeutiqu e est accompagnée de données de fiabilité 
+précises issues d'études cliniques ou ethnobotaniques documentées. Au -delà de sa dimension 
+technologique, CANNABO contribue significativement à la préservation du patrimoine culturel 
+camerounais en documentant et e n transmettant les connaissances phytothérapeutiques 
+traditionnelles, tout en garantissant leur accessibilité gratuite à toutes les couches de la 
+population. L'impact socio-économique de cette solution s'étend à la valorisation des ressources 
+végétales locales et à la promotion de l'autonomie thérapeutique des communautés, s'inscrivant 
+ainsi dans une démarche de développement durable et de couverture sanitaire universelle. Cette 
+initiative pionnière ouvre la voie à une nouvelle ère de la médecine traditionn elle africaine, où 
+la rigueur scientifique et l'innovation technologique se mettent au service de la santé publique, 
+établissant un modèle reproductible pour d'autres pays du continent africain confrontés aux 
+mêmes défis sanitaires et culturels. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+30 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+BIBLIOGRAPHIE 
+ 
+[1]  C. T.-m. K. Ernest Djoko1, «Formulation d'un médicament à base de Kalanchoé crenata,» 
+Université des Montagnes, Bangangté, 2016. 
+[2]  M. M. Liliane, «Plantes médicinales de la zone Littorale,» Université de Yaoundé 1, 
+Douala, 2018. 
+[3]  A. L. B. Delphine NGUEMO DONGOCK, «Etude ethnobotanique et phytochimique des 
+plantes médicinales utilisées dans utilisées dans Lazone de Moundou,» Origial paper, pp. 
+204-213, Fevrier 2018.  
+[4]  B. c. Y . T.-M. Aomar OSMANI, UML 2 : La pratique de la modélisation, Paris: Pearson 
+Education, 2009.  
+ 
+
+===PAGE-BREAK===
+
+ 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+ 
+Figure 13 : Architecture technique 
+ANNEXES 
+ 
+ANNEXE A : DOCUMENTATION TECHNIQUE 
+ 
+A-1 : Architecture du système  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===PAGE-BREAK===
+
+ 
+II 
+PLATEFORME DE TRAITEMENT DES MALADIES À BASE DE PLANTES 
+A-2 : Code source de la page posologie 
+ 
+Figure 14 : Petit code source 

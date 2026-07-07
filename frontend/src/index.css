@@ -11,14 +11,22 @@
    ───────────────────────────────────────────────────────────────────── */
 
 @layer base {
+  /* color-scheme déclaré en CSS et piloté par la classe `.dark` : rendu
+     déterministe et identique sur Chrome, Firefox, Safari… Indique aussi au
+     navigateur (notamment au « Auto Dark Mode » de Chrome) que la page gère
+     elle-même son thème sombre — il ne doit donc PAS la ré-assombrir. Cela
+     aligne aussi les contrôles natifs (select, date, scrollbars). */
+  :root      { color-scheme: light; }
+  html.dark  { color-scheme: dark;  }
+
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
   body {
-    background-color: #FAFAF7;
-    color: #1F2937;
+    background-color: #F4F6FC;
+    color: #1C2333;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-feature-settings: 'ss01', 'cv11', 'kern';
   }
@@ -27,11 +35,11 @@
     color: #E5E5DE;
   }
   ::selection {
-    background-color: rgba(166, 126, 46, 0.22);
-    color: #1A3568;
+    background-color: rgba(200, 161, 90, 0.20);
+    color: #143894;
   }
   html.dark ::selection {
-    background-color: rgba(201, 162, 39, 0.25);
+    background-color: rgba(200,161,90, 0.25);
     color: #F5F4EE;
   }
   /* Numerals tabulaires pour les KPI et tableaux par défaut */
@@ -43,12 +51,12 @@
 /* Scrollbar discrète */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #C9C5B6 transparent;
+  scrollbar-color: #D9E3F5 transparent;
 }
 html.dark * { scrollbar-color: #2A3651 transparent; }
 ::-webkit-scrollbar       { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #C9C5B6; border-radius: 6px; }
+::-webkit-scrollbar-thumb { background: #D9E3F5; border-radius: 6px; }
 html.dark ::-webkit-scrollbar-thumb { background: #2A3651; }
 ::-webkit-scrollbar-thumb:hover { background: #8E97A4; }
 html.dark ::-webkit-scrollbar-thumb:hover { background: #3D4A6B; }
@@ -79,6 +87,8 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #3D4A6B; }
     font-weight: 600;
     letter-spacing: -0.01em;
     line-height: 1.05;
+    font-feature-settings: 'liga' 1, 'dlig' 1, 'kern' 1;
+    font-optical-sizing: auto;
   }
   .heading-display em {
     font-style: italic;
@@ -91,7 +101,7 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #3D4A6B; }
     font-weight: 700;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: #5B6573;
+    color: #667085;
   }
   html.dark .eyebrow { color: #A1A6B0; }
 
@@ -107,14 +117,14 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #3D4A6B; }
     content: '';
     flex: 1;
     height: 1px;
-    background: #C9C5B6;
+    background: #D9E3F5;
   }
   html.dark .rule-ornate::before,
   html.dark .rule-ornate::after {
     background: #2A3651;
   }
   .rule-ornate > span {
-    color: #A67E2E;
+    color: #C8A15A;
     font-size: 9px;
     letter-spacing: 0.4em;
   }
@@ -150,14 +160,29 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #3D4A6B; }
     top: 12%;
     bottom: 12%;
     width: 2px;
-    background: #A67E2E;
+    background: #C8A15A;
     border-radius: 0 2px 2px 0;
     transform: scaleY(0);
     transform-origin: center;
     transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  html.dark .row-rule::before { background: #C9A227; }
+  html.dark .row-rule::before { background: #C8A15A; }
   .row-rule:hover::before { transform: scaleY(1); }
+
+  /* — Focus clavier des actions de ligne (boutons icônes des tables).
+       Anneau navy en clair, or en sombre — visible sans casser la sobriété. — */
+  .row-actions button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(46, 83, 145, 0.45);
+  }
+  html.dark .row-actions button:focus-visible {
+    box-shadow: 0 0 0 2px rgba(200,161,90, 0.55);
+  }
+
+  /* — Survol de ligne premium : fine barre dorée à gauche (tables partagées) — */
+  .table-row > td:first-child { transition: box-shadow 0.2s ease; }
+  .table-row:hover > td:first-child { box-shadow: inset 3px 0 0 0 #C8A15A; }
+  html.dark .table-row:hover > td:first-child { box-shadow: inset 3px 0 0 0 #C8A15A; }
 
   /* — Sidebar item active marker : barre or à gauche — */
   .nav-active-marker {
@@ -166,7 +191,7 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #3D4A6B; }
     top: 25%;
     bottom: 25%;
     width: 2px;
-    background: #C9A227;
+    background: #C8A15A;
     border-radius: 0 2px 2px 0;
   }
 
@@ -199,8 +224,8 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #3D4A6B; }
   }
   html.dark .input-field::placeholder { color: #6F7787; }
   html.dark .input-field:focus {
-    border-color: #C9A227;
-    box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.18);
+    border-color: #C8A15A;
+    box-shadow: 0 0 0 2px rgba(200,161,90, 0.18);
   }
 
   /* — Pilules colorées (badges contextuels) — dark-aware automatique — */
@@ -218,9 +243,9 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #3D4A6B; }
     border-color: rgba(133,162,204,0.30);
   }
   html.dark .pill-accent {
-    background-color: rgba(201,162,39,0.18);
+    background-color: rgba(200,161,90,0.18);
     color: #DBBC5E;
-    border-color: rgba(201,162,39,0.35);
+    border-color: rgba(200,161,90,0.35);
   }
   html.dark .pill-success {
     background-color: rgba(15,107,69,0.20);
@@ -256,4 +281,26 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #3D4A6B; }
     background-image:
       linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 60%);
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Réduction de mouvement (prefers-reduced-motion).
+   framer-motion gère ses propres animations via <MotionConfig reducedMotion>
+   dans main.jsx. Ici on neutralise les animations CSS pures (shimmer,
+   dot-pulse) et les transitions décoratives, sans nuire à la lisibilité.
+   ───────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Skeleton : fond neutre fixe plutôt qu'un dégradé figé en cours de course. */
+  .skeleton           { background: #E1E1DA; }
+  html.dark .skeleton { background: #243153; }
+  /* Indicateur de statut : visible mais sans pulsation. */
+  .pulse-dot::after   { display: none; }
 }

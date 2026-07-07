@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Upload, CheckCircle, AlertCircle, FileSpreadsheet, FileUp } from 'lucide-react';
 import api from '../../../services/api';
+import { fetchAll } from '../../../services/fetchAll';
 import { toast } from '../../../store/toastStore';
 import PageShell from '../../../components/ui/PageShell';
 import Button from '../../../components/ui/Button';
@@ -9,7 +10,7 @@ import Button from '../../../components/ui/Button';
 function StepDot({ n, active, done }) {
   return (
     <div className="flex items-center gap-2">
-      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors shrink-0 ${done ? 'bg-success text-white' : active ? 'bg-primary-900 text-white' : 'bg-surface-alt text-ink-muted border border-line'}`}>
+      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors shrink-0 ${done ? 'bg-success text-white' : active ? 'bg-primary-900 text-white' : 'bg-surface-alt dark:bg-surface-dark-alt text-ink-muted dark:text-ink-dark-muted border border-line dark:border-line-dark'}`}>
         {done ? <CheckCircle size={13} /> : n}
       </div>
     </div>
@@ -22,9 +23,9 @@ function StepCard({ n, title, active, done, children }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: (n - 1) * 0.06 }}
-      className={`bg-white border rounded-2xl p-5 shadow-card transition-colors ${active ? 'border-primary-300 ring-2 ring-primary-500/10' : done ? 'border-success/30' : 'border-line'}`}
+      className={`bg-white dark:bg-surface-dark border rounded-2xl p-5 shadow-card transition-colors ${active ? 'border-primary-300 ring-2 ring-primary-500/10' : done ? 'border-success/30' : 'border-line dark:border-line-dark'}`}
     >
-      <h2 className="text-ink font-semibold text-sm mb-4 flex items-center gap-2.5">
+      <h2 className="text-ink dark:text-ink-dark font-semibold text-sm mb-4 flex items-center gap-2.5">
         <StepDot n={n} active={active} done={done} />
         {title}
       </h2>
@@ -48,9 +49,8 @@ export default function ChefImport() {
   // elle qui sera transmise à tous les endpoints backend qui exigent
   // `?semaine=<id>` (template, preview, dépôt).
   useEffect(() => {
-    api.get('/semaines/')
-      .then(r => {
-        const list = Array.isArray(r.data) ? r.data : (r.data.results ?? []);
+    fetchAll('/semaines/')
+      .then(list => {
         const active = list.find(s => s.statut === 'IMPORTS_OUVERTS')
                      ?? list.find(s => s.statut === 'DRAFT')
                      ?? list[0];
@@ -62,7 +62,7 @@ export default function ChefImport() {
 
   const handleDownloadTemplate = async () => {
     if (!semaine) {
-      setError("Aucune semaine ouverte n'a été trouvée. Contactez la DAR.");
+      setError("Aucune semaine ouverte n'a été trouvée. Contactez la DAASR.");
       return;
     }
     setError('');
@@ -97,7 +97,7 @@ export default function ChefImport() {
   const handleFile = async (f) => {
     if (!f || !f.name.endsWith('.xlsx')) return;
     if (!semaine) {
-      setError("Aucune semaine ouverte n'a été trouvée. Contactez la DAR.");
+      setError("Aucune semaine ouverte n'a été trouvée. Contactez la DAASR.");
       return;
     }
     setFile(f); setPreview(null); setError(''); setSubmitted(false);
@@ -168,7 +168,7 @@ export default function ChefImport() {
           ) : (
             <div className="flex items-start gap-2.5 px-4 py-3 bg-warning/8 border border-warning/25 rounded-xl text-warning text-sm">
               <AlertCircle size={15} className="mt-0.5 shrink-0" />
-              Aucune semaine n'est ouverte pour les imports. Contactez la DAR.
+              Aucune semaine n'est ouverte pour les imports. Contactez la DAASR.
             </div>
           )}
         </StepCard>
@@ -179,9 +179,9 @@ export default function ChefImport() {
             onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={e => { e.preventDefault(); setIsDragging(false); handleFile(e.dataTransfer.files[0]); }}
-            animate={{ backgroundColor: isDragging ? 'rgba(30,58,138,0.04)' : 'rgba(0,0,0,0)', scale: isDragging ? 1.005 : 1 }}
+            animate={{ backgroundColor: isDragging ? 'rgba(20,56,148,0.04)' : 'rgba(0,0,0,0)', scale: isDragging ? 1.005 : 1 }}
             transition={{ duration: 0.18 }}
-            className="rounded-xl border border-line p-4"
+            className="rounded-xl border border-line dark:border-line-dark p-4"
           >
             <div className="flex items-center gap-3 flex-wrap">
               <motion.button
@@ -197,16 +197,16 @@ export default function ChefImport() {
                 {file && (
                   <motion.span
                     initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
-                    className="flex items-center gap-2 text-sm text-ink"
+                    className="flex items-center gap-2 text-sm text-ink dark:text-ink-dark"
                   >
                     <FileSpreadsheet size={14} className="text-success shrink-0" />
                     <span className="font-medium truncate max-w-[200px]" title={file.name}>{file.name}</span>
-                    <span className="text-ink-muted text-xs">({(file.size / 1024).toFixed(0)} Ko)</span>
+                    <span className="text-ink-muted dark:text-ink-dark-muted text-xs">({(file.size / 1024).toFixed(0)} Ko)</span>
                   </motion.span>
                 )}
               </AnimatePresence>
             </div>
-            <p className="text-xs text-ink-subtle mt-2.5">
+            <p className="text-xs text-ink-subtle dark:text-ink-dark-subtle mt-2.5">
               Format accepté : .xlsx &middot; Taille max 5 Mo &middot; Glisser-déposer accepté
             </p>
             <input ref={inputRef} type="file" accept=".xlsx" className="hidden" onChange={handleFileChange} />
@@ -217,7 +217,7 @@ export default function ChefImport() {
         <AnimatePresence>
           {loading && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="flex items-center gap-3 text-ink-muted text-sm px-1">
+              className="flex items-center gap-3 text-ink-muted dark:text-ink-dark-muted text-sm px-1">
               <div className="w-4 h-4 border-2 border-primary-200 border-t-primary-700 rounded-full animate-spin shrink-0" />
               Analyse du fichier…
             </motion.div>
@@ -240,21 +240,21 @@ export default function ChefImport() {
           {preview && !submitted && (
             <StepCard n={3} title={`Aperçu — ${preview.nb_ues ?? 0} UE${(preview.nb_ues ?? 0) > 1 ? 's' : ''} détectée${(preview.nb_ues ?? 0) > 1 ? 's' : ''}`} active done={false}>
               {preview.ues?.length > 0 && (
-                <div className="overflow-x-auto rounded-xl border border-line mb-4">
+                <div className="overflow-x-auto rounded-xl border border-line dark:border-line-dark mb-4">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="bg-surface-subtle border-b border-line">
+                      <tr className="bg-surface-subtle dark:bg-surface-dark-subtle border-b border-line dark:border-line-dark">
                         {['Code', 'Intitulé', 'Enseignant', 'Statut'].map(h => (
-                          <th key={h} className="text-left px-3 py-2.5 text-[11px] font-bold text-ink-muted uppercase tracking-widest">{h}</th>
+                          <th key={h} className="text-left px-3 py-2.5 text-[11px] font-bold text-ink-muted dark:text-ink-dark-muted uppercase tracking-widest">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {preview.ues.slice(0, 10).map((u, i) => (
-                        <tr key={i} className="border-b border-line/40 last:border-0 hover:bg-surface-alt transition-colors">
-                          <td className="px-3 py-2 font-bold text-primary-700">{u.code}</td>
-                          <td className="px-3 py-2 text-ink">{u.intitule}</td>
-                          <td className="px-3 py-2 text-ink-muted">{u.enseignant ?? '—'}</td>
+                        <tr key={i} className="border-b border-line/40 dark:border-line-dark/40 last:border-0 hover:bg-surface-alt dark:hover:bg-surface-dark-alt transition-colors">
+                          <td className="px-3 py-2 font-bold text-primary-700 dark:text-primary-300">{u.code}</td>
+                          <td className="px-3 py-2 text-ink dark:text-ink-dark">{u.intitule}</td>
+                          <td className="px-3 py-2 text-ink-muted dark:text-ink-dark-muted">{u.enseignant ?? '—'}</td>
                           <td className="px-3 py-2">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border ${u.erreur ? 'bg-danger/10 text-danger border-danger/25' : 'bg-success/10 text-success border-success/25'}`}>
                               {u.erreur ?? 'OK'}
@@ -297,7 +297,7 @@ export default function ChefImport() {
               <CheckCircle size={20} className="shrink-0" />
               <div>
                 <p className="font-bold text-sm">Fichier envoyé avec succès !</p>
-                <p className="text-success/70 text-xs mt-0.5">La DAR a été notifiée. Vous pouvez renvoyer un nouveau fichier si nécessaire.</p>
+                <p className="text-success/70 text-xs mt-0.5">La DAASR a été notifiée. Vous pouvez renvoyer un nouveau fichier si nécessaire.</p>
               </div>
             </motion.div>
           )}

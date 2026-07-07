@@ -12,13 +12,13 @@ const iCls = 'input-field';
 function F({ label, children }) {
   return (
     <div>
-      <label className="text-[11px] font-bold text-ink-muted uppercase tracking-widest mb-1.5 block">{label}</label>
+      <label className="text-[11px] font-bold text-ink-muted dark:text-ink-dark-muted uppercase tracking-widest mb-1.5 block">{label}</label>
       {children}
     </div>
   );
 }
 
-const BLANK = { code: '', intitule: '', filiere: '' };
+const BLANK = { code: '', intitule: '', filiere: '', credits: 6 };
 
 const COLS = [
   { key: 'code', label: 'Code', render: r => (
@@ -27,6 +27,11 @@ const COLS = [
     </span>
   )},
   { key: 'intitule', label: 'Intitulé' },
+  { key: 'credits', label: 'Crédits', render: r => (
+    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gold-100 text-gold-700 border border-gold-200 dark:bg-gold-500/15 dark:text-gold-300 dark:border-gold-500/30 tabular-nums">
+      {r.credits ?? '—'}<span className="font-medium opacity-75">cr.</span>
+    </span>
+  )},
   { key: 'filiere', label: 'Filière', render: r => r.filiere ? (
     <span className="text-xs text-ink-muted dark:text-ink-dark-muted">
       <strong>{r.filiere.code ?? ''}</strong>
@@ -49,7 +54,7 @@ export default function UEs() {
 
   const openCreate = () => { setForm({ ...BLANK, filiere: filieres[0]?.id ?? '' }); setModal({ open: true, item: null }); };
   const openEdit   = (item) => {
-    setForm({ code: item.code, intitule: item.intitule, filiere: item.filiere?.id ?? item.filiere });
+    setForm({ code: item.code, intitule: item.intitule, filiere: item.filiere?.id ?? item.filiere, credits: item.credits ?? 6 });
     setModal({ open: true, item });
   };
   const handleSave = async () => {
@@ -111,6 +116,13 @@ export default function UEs() {
             {filieres.map(f => (
               <option key={f.id} value={f.id}>{f.code} {f.niveau} — {f.nom}</option>
             ))}
+          </select>
+        </F>
+        <F label="Crédits">
+          <select className={iCls} value={form.credits}
+            onChange={e => setForm({ ...form, credits: Number(e.target.value) })}>
+            <option value={3}>3 crédits</option>
+            <option value={6}>6 crédits</option>
           </select>
         </F>
       </Modal>

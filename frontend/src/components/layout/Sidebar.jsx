@@ -1,14 +1,16 @@
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import useAuthStore from '../../store/authStore';
 import useUiStore from '../../store/uiStore';
 import useThemeStore from '../../store/themeStore';
+import { useIsDesktop } from '../../hooks/useMediaQuery';
 import logoFs from '../../assets/logo_fs.png';
 import {
   LayoutDashboard, Calendar, Upload, MapPin,
   DoorOpen, Building2, GraduationCap, Users,
   BookOpen, FileUp, UserCog, Archive, CalendarDays,
-  History, LayoutGrid,
+  History, LayoutGrid, X,
 } from 'lucide-react';
 
 const DAR_NAV = [
@@ -42,12 +44,8 @@ const CHEF_NAV = [
    Le creux (demi-cercle de la couleur du main content) est ENFANT direct
    du fond translucide actif → il suit automatiquement le glissement via
    `layoutId="sb-active-bg"`, sans timing désynchronisé.
-
-   Le Link colle au bord droit de la sidebar (ml-2 mr-0) pour que le creux
-   apparaisse pile à la frontière sidebar/main, donnant l'illusion d'un
-   véritable trou dans la sidebar révélant la page derrière.
    ─────────────────────────────────────────────────────────────────── */
-function SidebarItem({ item, open, notchColor }) {
+function SidebarItem({ item, open, notchColor, onNavigate }) {
   const location = useLocation();
   const Icon = item.icon;
   const isActive = item.end
@@ -57,11 +55,13 @@ function SidebarItem({ item, open, notchColor }) {
   return (
     <Link
       to={item.to}
+      onClick={onNavigate}
       title={!open ? item.label : undefined}
       className={
         'group relative flex items-center text-[13px] outline-none ' +
+        'focus-visible:ring-2 focus-visible:ring-gold-400/70 focus-visible:ring-inset ' +
         (open
-          ? 'gap-3 pl-3 pr-5 py-2 h-9 ml-2 mr-0 rounded-l-md'
+          ? 'gap-3 pl-3 pr-5 min-h-[44px] ml-2 mr-0 rounded-l-md'
           : 'justify-center w-11 h-11 mx-auto rounded-md')
       }
     >
@@ -73,19 +73,23 @@ function SidebarItem({ item, open, notchColor }) {
             'absolute inset-0 ' + (open ? 'rounded-l-md' : 'rounded-md')
           }
           style={{
-            backgroundColor: 'rgba(255,255,255,0.10)',
+            // Tablette « verre glacé » iOS : pas de filet doré plein, mais une
+            // arête dorée givrée à gauche + reflet glossy haut + ombre douce.
+            backgroundColor: 'rgba(255,255,255,0.12)',
+            backgroundImage:
+              'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 55%)',
             boxShadow:
-              'inset 3px 0 0 0 #C9A227,' +
-              'inset 0 1px 0 0 rgba(255,255,255,0.06),' +
-              'inset 0 -1px 0 0 rgba(0,0,0,0.10)',
-            backdropFilter: 'blur(3px)',
-            WebkitBackdropFilter: 'blur(3px)',
+              'inset 0 1px 0 0 rgba(255,255,255,0.22),' +   // reflet glossy haut
+              'inset 0 -1px 0 0 rgba(0,0,0,0.20),' +        // ombre basse
+              'inset 0 0 0 1px rgba(255,255,255,0.10),' +   // liseré givré
+              'inset 12px 0 16px -12px rgba(200,161,90,0.65),' + // arête dorée givrée (remplace le filet dur)
+              '0 6px 16px -6px rgba(0,0,0,0.38)',           // halo doux
+            backdropFilter: 'blur(7px)',
+            WebkitBackdropFilter: 'blur(7px)',
           }}
           transition={{ type: 'spring', stiffness: 380, damping: 34, mass: 0.7 }}
         >
-          {/* Le creux : demi-cercle de couleur "main" intégré au fond actif.
-              Comme c'est un enfant du motion.span layoutId, il glisse en
-              synchronie parfaite — aucune désynchro possible. */}
+          {/* Le creux : demi-cercle de couleur "main" intégré au fond actif. */}
           {open && (
             <span
               aria-hidden
@@ -156,32 +160,16 @@ function SidebarItem({ item, open, notchColor }) {
   );
 }
 
-export default function Sidebar() {
-  const { role }            = useAuthStore();
-  const sidebarCollapsed    = useUiStore((s) => s.sidebarCollapsed);
-  const theme               = useThemeStore((s) => s.theme);
-  const isDark              = theme === 'dark';
-  const items               = role === 'DAR' ? DAR_NAV : CHEF_NAV;
-  const open                = !sidebarCollapsed;
-
-  const bgSidebar  = isDark ? '#06091A' : '#1E3A8A';
-  const borderCol  = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(15,31,71,0.40)';
-  // Couleur du creux = couleur du main content, selon le thème
-  const notchColor = isDark ? '#0A0F1F' : '#FAFAF7';
-
+/* ───────────────────────────────────────────────────────────────────────
+   Contenu interne partagé entre la sidebar desktop et le tiroir mobile.
+   `open` pilote l'affichage des libellés ; `animate` active l'entrée en
+   cascade (uniquement au montage de la sidebar desktop).
+   ─────────────────────────────────────────────────────────────────── */
+function SidebarBody({ items, role, open, notchColor, animate = true, onNavigate, onClose }) {
   return (
-    <motion.aside
-      initial={false}
-      animate={{ width: open ? 240 : 64, backgroundColor: bgSidebar }}
-      transition={{
-        width:           { type: 'spring', stiffness: 360, damping: 36 },
-        backgroundColor: { duration: 0.28, ease: 'easeOut' },
-      }}
-      style={{ borderRightColor: borderCol }}
-      className="flex flex-col shrink-0 relative border-r shadow-sidebar overflow-visible rounded-r-xl"
-    >
+    <>
       {/* En-tête : logo + nom institutionnel */}
-      <div className="px-4 pt-5 pb-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+      <div className="px-4 pt-5 pb-5 border-b shrink-0" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-3 min-h-[44px]">
           <div className="w-11 h-11 rounded-full overflow-hidden bg-white/95 border border-white/20 shrink-0">
             <img src={logoFs} alt="FS-UEB" className="w-full h-full object-cover" />
@@ -194,7 +182,7 @@ export default function Sidebar() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{    opacity: 0, x: -6 }}
                 transition={{ duration: 0.18 }}
-                className="leading-tight overflow-hidden whitespace-nowrap"
+                className="leading-tight overflow-hidden whitespace-nowrap flex-1"
               >
                 <p className="text-white font-display font-semibold text-[18px] tracking-tight">
                   Chrono<em className="italic font-normal text-gold-400">FS</em>
@@ -205,6 +193,16 @@ export default function Sidebar() {
               </motion.div>
             )}
           </AnimatePresence>
+          {/* Bouton de fermeture — visible uniquement sur le tiroir mobile */}
+          {onClose && (
+            <button
+              onClick={onClose}
+              aria-label="Fermer le menu"
+              className="ml-auto shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-md text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X size={18} strokeWidth={1.8} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -212,13 +210,13 @@ export default function Sidebar() {
       <nav className="flex-1 overflow-y-auto py-4 px-0 space-y-1 sidebar-scroll">
         <LayoutGroup id="sidebar-nav">
           {items.map((item, i) => {
-            // Entrée échelonnée au montage de la sidebar (une seule fois,
-            // à l'arrivée dans l'espace authentifié — pas à chaque navigation).
-            const reveal = {
-              initial: { opacity: 0, x: -10 },
-              animate: { opacity: 1, x: 0 },
-              transition: { duration: 0.34, delay: 0.06 + i * 0.045, ease: [0.22, 1, 0.36, 1] },
-            };
+            const reveal = animate
+              ? {
+                  initial: { opacity: 0, x: -10 },
+                  animate: { opacity: 1, x: 0 },
+                  transition: { duration: 0.34, delay: 0.06 + i * 0.045, ease: [0.22, 1, 0.36, 1] },
+                }
+              : {};
             if (item.type === 'sep') {
               return (
                 <motion.div key={i} {...reveal} className={'pt-5 pb-1.5 ' + (open ? 'px-4' : 'px-2')}>
@@ -238,7 +236,7 @@ export default function Sidebar() {
             }
             return (
               <motion.div key={item.to} {...reveal}>
-                <SidebarItem item={item} open={open} notchColor={notchColor} />
+                <SidebarItem item={item} open={open} notchColor={notchColor} onNavigate={onNavigate} />
               </motion.div>
             );
           })}
@@ -247,22 +245,101 @@ export default function Sidebar() {
 
       {/* Pied de sidebar */}
       <div
-        className={'border-t py-4 ' + (open ? 'px-4' : 'px-2 flex justify-center')}
+        className={'border-t py-4 shrink-0 ' + (open ? 'px-4' : 'px-2 flex justify-center')}
         style={{ borderColor: 'rgba(255,255,255,0.08)' }}
       >
         {open ? (
-          <>
-            <div className="flex items-center gap-2.5">
-              <span className="pulse-dot bg-gold-400" />
-              <p className="text-[9px] uppercase tracking-[0.22em] text-white/55 font-bold leading-snug">
-                {role === 'DAR' ? 'Div. Affaires Académiques' : 'Chef de Département'}
-              </p>
-            </div>
-          </>
+          <div className="flex items-center gap-2.5">
+            <span className="pulse-dot bg-gold-400" />
+            <p className="text-[9px] uppercase tracking-[0.22em] text-white/55 font-bold leading-snug">
+              {role === 'DAR' ? 'Div. Affaires Académiques' : 'Chef de Département'}
+            </p>
+          </div>
         ) : (
           <span className="pulse-dot bg-gold-400" title="Connecté" />
         )}
       </div>
+    </>
+  );
+}
+
+export default function Sidebar() {
+  const { role }            = useAuthStore();
+  const sidebarCollapsed    = useUiStore((s) => s.sidebarCollapsed);
+  const mobileNavOpen       = useUiStore((s) => s.mobileNavOpen);
+  const closeMobileNav      = useUiStore((s) => s.closeMobileNav);
+  const theme               = useThemeStore((s) => s.theme);
+  const isDark              = theme === 'dark';
+  const isDesktop           = useIsDesktop();
+  const location            = useLocation();
+  const items               = role === 'DAR' ? DAR_NAV : CHEF_NAV;
+  const open                = !sidebarCollapsed;
+
+  const bgSidebar  = isDark ? '#06091A' : '#143894';
+  const borderCol  = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(20,56,148,0.40)';
+  const notchColor = isDark ? '#0A0F1F' : '#F4F6FC';
+
+  // Ferme le tiroir mobile à chaque changement de route.
+  useEffect(() => {
+    closeMobileNav();
+  }, [location.pathname, closeMobileNav]);
+
+  // ── Mobile (< lg) : tiroir overlay coulissant + voile ──────────────────
+  if (!isDesktop) {
+    return (
+      <AnimatePresence>
+        {mobileNavOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            {/* Voile sombre — ferme au clic */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={closeMobileNav}
+              className="absolute inset-0 bg-ink-strong/60 dark:bg-black/70"
+            />
+            {/* Tiroir */}
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', stiffness: 360, damping: 38 }}
+              style={{ backgroundColor: bgSidebar }}
+              className="absolute inset-y-0 left-0 w-[min(82vw,280px)] flex flex-col shadow-2xl"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menu de navigation"
+            >
+              <SidebarBody
+                items={items}
+                role={role}
+                open
+                notchColor={notchColor}
+                animate={false}
+                onNavigate={closeMobileNav}
+                onClose={closeMobileNav}
+              />
+            </motion.aside>
+          </div>
+        )}
+      </AnimatePresence>
+    );
+  }
+
+  // ── Desktop (≥ lg) : sidebar en flux, repliable ────────────────────────
+  return (
+    <motion.aside
+      initial={false}
+      animate={{ width: open ? 240 : 64, backgroundColor: bgSidebar }}
+      transition={{
+        width:           { type: 'spring', stiffness: 360, damping: 36 },
+        backgroundColor: { duration: 0.28, ease: 'easeOut' },
+      }}
+      style={{ borderRightColor: borderCol }}
+      className="flex flex-col shrink-0 relative border-r shadow-sidebar overflow-visible rounded-r-xl"
+    >
+      <SidebarBody items={items} role={role} open={open} notchColor={notchColor} />
     </motion.aside>
   );
 }

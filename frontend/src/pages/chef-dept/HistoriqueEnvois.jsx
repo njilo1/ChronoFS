@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { History, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '../../services/api';
+import { fetchAll } from '../../services/fetchAll';
 import { toast } from '../../store/toastStore';
 import { extractApiError } from '../../services/apiError';
 import PageShell from '../../components/ui/PageShell';
@@ -17,8 +18,8 @@ export default function HistoriqueEnvois() {
   const [busy, setBusy]         = useState(null);
 
   useEffect(() => {
-    api.get('/imports/mine/')
-      .then(res => setImports(Array.isArray(res.data) ? res.data : (res.data.results ?? [])))
+    fetchAll('/imports/mine/')
+      .then(list => setImports(list))
       .catch(() => setImports([]))
       .finally(() => setLoading(false));
   }, []);
@@ -53,7 +54,7 @@ export default function HistoriqueEnvois() {
           {[1,2,3].map(i => <SkeletonCard key={i} height="h-16" />)}
         </div>
       ) : sorted.length === 0 ? (
-        <div className="bg-white border border-line rounded-2xl shadow-card py-16 text-center text-ink-muted text-sm">
+        <div className="bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-2xl shadow-card py-16 text-center text-ink-muted dark:text-ink-dark-muted text-sm">
           Aucun envoi effectué pour le moment.
         </div>
       ) : (
@@ -65,18 +66,19 @@ export default function HistoriqueEnvois() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.045 }}
-                className="bg-white border border-line rounded-2xl shadow-card overflow-hidden"
+                whileHover={{ y: -2, transition: { type: 'spring', stiffness: 300, damping: 24 } }}
+                className="bg-white dark:bg-surface-dark border border-line dark:border-line-dark rounded-2xl shadow-card overflow-hidden hover:shadow-card-md hover:border-primary-200 transition-all"
               >
                 <div className="flex items-center justify-between px-5 py-4 gap-4">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="p-2 bg-primary-50 rounded-xl shrink-0">
-                      <History size={13} className="text-primary-700" />
+                    <div className="p-2 bg-primary-50 dark:bg-primary-950/40 rounded-xl shrink-0">
+                      <History size={13} className="text-primary-700 dark:text-primary-300" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-ink truncate">
+                      <p className="text-sm font-semibold text-ink dark:text-ink-dark truncate">
                         {imp.semaine_libelle ?? 'Semaine'}
                       </p>
-                      <p className="text-xs text-ink-muted mt-0.5">
+                      <p className="text-xs text-ink-muted dark:text-ink-dark-muted mt-0.5">
                         Déposé le {fmtDt(imp.uploaded_at)}
                         {imp.nb_demandes != null && ` · ${imp.nb_demandes} cours`}
                       </p>
@@ -90,7 +92,7 @@ export default function HistoriqueEnvois() {
                       <Download size={13} />
                     </button>
                     <button onClick={() => setExpanded(isOpen ? null : imp.id)}
-                      className="p-1.5 text-ink-muted hover:text-ink hover:bg-surface-alt rounded-lg transition-all">
+                      className="p-1.5 text-ink-muted dark:text-ink-dark-muted hover:text-ink dark:hover:text-ink-dark hover:bg-surface-alt dark:hover:bg-surface-dark-alt rounded-lg transition-all">
                       {isOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                     </button>
                   </div>
@@ -103,21 +105,21 @@ export default function HistoriqueEnvois() {
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="overflow-hidden border-t border-line"
+                      className="overflow-hidden border-t border-line dark:border-line-dark"
                     >
-                      <div className="px-5 py-4 bg-surface-subtle space-y-2">
+                      <div className="px-5 py-4 bg-surface-subtle dark:bg-surface-dark-subtle space-y-2">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-ink">Cours enregistrés</span>
-                          <span className="font-semibold text-success">{imp.rapport_parsing?.lignes_ok ?? imp.nb_demandes ?? 0}</span>
+                          <span className="text-ink dark:text-ink-dark">Cours enregistrés</span>
+                          <span className="font-semibold text-success dark:text-emerald-300">{imp.rapport_parsing?.lignes_ok ?? imp.nb_demandes ?? 0}</span>
                         </div>
                         {(imp.rapport_parsing?.lignes_erreur ?? 0) > 0 && (
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-ink">Lignes refusées</span>
+                            <span className="text-ink dark:text-ink-dark">Lignes refusées</span>
                             <span className="font-semibold text-danger">{imp.rapport_parsing.lignes_erreur}</span>
                           </div>
                         )}
                         {imp.rapport_parsing?.erreurs?.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-line space-y-1">
+                          <div className="mt-2 pt-2 border-t border-line dark:border-line-dark space-y-1">
                             {imp.rapport_parsing.erreurs.map((e, j) => (
                               <p key={j} className="text-xs text-warning">
                                 &#9888; {typeof e === 'string' ? e : `Ligne ${e.ligne} : ${e.message}`}
@@ -126,7 +128,7 @@ export default function HistoriqueEnvois() {
                           </div>
                         )}
                         {(imp.rapport_parsing?.lignes_erreur ?? 0) === 0 && !imp.rapport_parsing?.erreurs?.length && (
-                          <p className="text-xs text-ink-muted italic">Aucune erreur signalée lors de l'analyse.</p>
+                          <p className="text-xs text-ink-muted dark:text-ink-dark-muted italic">Aucune erreur signalée lors de l'analyse.</p>
                         )}
                       </div>
                     </motion.div>

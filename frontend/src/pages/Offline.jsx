@@ -4,7 +4,7 @@ import logoFs from '../assets/logo_fs.png';
 
 export default function Offline() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-subtle p-4">
+    <div className="min-h-dvh flex items-center justify-center bg-surface-subtle dark:bg-page-dark p-4">
       <motion.div
         className="text-center max-w-sm"
         initial={{ opacity: 0, y: 20 }}
@@ -17,8 +17,8 @@ export default function Offline() {
         <div className="w-12 h-12 rounded-full bg-ink-muted/10 flex items-center justify-center mx-auto mb-4">
           <WifiOff size={22} className="text-ink-muted" />
         </div>
-        <h1 className="text-xl font-bold text-ink-strong mb-2">Connexion perdue</h1>
-        <p className="text-ink-muted text-sm leading-relaxed mb-6">
+        <h1 className="text-xl font-bold text-ink-strong dark:text-ink-dark-strong mb-2">Connexion perdue</h1>
+        <p className="text-ink-muted dark:text-ink-dark-muted text-sm leading-relaxed mb-6">
           Vous êtes actuellement hors ligne. Vérifiez votre connexion internet et réessayez.
         </p>
         <button

@@ -194,7 +194,7 @@ class UESerializer(serializers.ModelSerializer):
     class Meta:
         model  = UE
         fields = (
-            'id', 'code', 'intitule',
+            'id', 'code', 'intitule', 'credits',
             'filiere', 'filiere_code', 'filiere_niveau', 'filiere_ville',
         )
 

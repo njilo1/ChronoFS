@@ -60,14 +60,14 @@ function ConnexionButton({ loading }) {
       /* Glow pulsant en veille */
       animate={!loading ? {
         boxShadow: [
-          '0 3px 14px rgba(30,58,138,0.28)',
-          '0 3px 14px rgba(30,58,138,0.28), 0 0 22px rgba(30,58,138,0.18)',
-          '0 3px 14px rgba(30,58,138,0.28)',
+          '0 3px 14px rgba(20,56,148,0.28)',
+          '0 3px 14px rgba(20,56,148,0.28), 0 0 22px rgba(20,56,148,0.18)',
+          '0 3px 14px rgba(20,56,148,0.28)',
         ],
       } : {}}
       transition={!loading ? { duration: 2.8, repeat: Infinity, ease: 'easeInOut' } : {}}
       className="relative w-full overflow-hidden text-white font-semibold py-3.5 rounded-xl text-sm disabled:opacity-60 select-none"
-      style={{ background: '#1E3A8A' }}
+      style={{ background: '#143894' }}
     >
       {/* ── Shimmer balayage ── */}
       <motion.span
@@ -145,7 +145,7 @@ export default function Login() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 sm:p-8 relative overflow-hidden"
+      className="min-h-dvh flex items-center justify-center p-4 sm:p-8 relative overflow-hidden"
       style={{ background: '#F4F8FF' }}
     >
       {/* ── Forme haut-gauche — se détache du coin, devient un cercle parfait,
@@ -177,7 +177,7 @@ export default function Login() {
           top: -260, left: -220,
           width: 720, height: 620,
           borderRadius: '58% 42% 62% 38% / 48% 55% 45% 52%',
-          background: 'linear-gradient(150deg, #1E3A8A 0%, #1C4BD4 55%, #2F74E8 100%)',
+          background: 'linear-gradient(150deg, #143894 0%, #1C4BD4 55%, #2F74E8 100%)',
           rotate: -18,
           pointerEvents: 'none',
         }} />
@@ -211,7 +211,7 @@ export default function Login() {
           bottom: -240, right: -220,
           width: 680, height: 760,
           borderRadius: '62% 38% 42% 58% / 55% 60% 40% 45%',
-          background: 'linear-gradient(150deg, #1E3A8A 0%, #1C4BD4 55%, #2F74E8 100%)',
+          background: 'linear-gradient(150deg, #143894 0%, #1C4BD4 55%, #2F74E8 100%)',
           rotate: 22,
           pointerEvents: 'none',
         }} />
@@ -221,18 +221,17 @@ export default function Login() {
         initial={{ opacity:0, y:28, scale:0.97 }}
         animate={{ opacity:1, y:0,  scale:1    }}
         transition={{ duration:0.6, ease:[0.22,1,0.36,1] }}
-        className="relative w-full bg-white rounded-[2rem] overflow-hidden flex"
+        className="relative w-full bg-white rounded-3xl sm:rounded-[2rem] overflow-hidden flex md:min-h-[560px] my-auto"
         style={{
           maxWidth: 900,
-          minHeight: 560,
-          boxShadow: '0 24px 80px rgba(30,58,138,0.13), 0 4px 20px rgba(30,58,138,0.07)',
+          boxShadow: '0 24px 80px rgba(20,56,148,0.13), 0 4px 20px rgba(20,56,148,0.07)',
         }}
       >
 
         {/* ══ PANNEAU GAUCHE — bleu ══ */}
         <div
           className="hidden md:flex md:w-[46%] relative flex-col justify-between overflow-hidden"
-          style={{ background: 'linear-gradient(150deg, #1E3A8A 0%, #1C4BD4 55%, #2F74E8 100%)' }}
+          style={{ background: 'linear-gradient(150deg, #143894 0%, #1C4BD4 55%, #2F74E8 100%)' }}
         >
           {/* Cercles déco */}
           <motion.div animate={{ scale:[1,1.1,1], opacity:[0.5,0.8,0.5] }}
@@ -276,22 +275,22 @@ export default function Login() {
                 mixBlendMode: 'multiply',
                 transform: 'scale(1.33)',
                 transformOrigin: 'center bottom',
-                filter: 'drop-shadow(0px 24px 48px rgba(30,58,138,0.55)) drop-shadow(0px 6px 16px rgba(6,182,212,0.25)) brightness(1.05) contrast(1.04) saturate(1.1)',
+                filter: 'drop-shadow(0px 24px 48px rgba(20,56,148,0.55)) drop-shadow(0px 6px 16px rgba(6,182,212,0.25)) brightness(1.05) contrast(1.04) saturate(1.1)',
               }}
             />
           </motion.div>
         </div>
 
         {/* ══ PANNEAU DROIT — blanc avec décoration ══ */}
-        <div className="flex-1 flex flex-col justify-center px-8 sm:px-10 py-10 relative overflow-hidden">
+        <div className="flex-1 flex flex-col justify-center px-6 py-8 sm:px-10 sm:py-10 relative overflow-hidden">
 
           {/* ─ Éléments décoratifs fond blanc (du modèle) ─ */}
           {/* Grand cercle bleu très léger haut-droit */}
           <div style={{ position:'absolute', top:-100, right:-100, width:320, height:320,
-            borderRadius:'50%', background:'rgba(30,58,138,0.045)', pointerEvents:'none', zIndex:0 }} />
+            borderRadius:'50%', background:'rgba(20,56,148,0.045)', pointerEvents:'none', zIndex:0 }} />
           {/* Anneau haut-droit */}
           <div style={{ position:'absolute', top:30, right:30, width:160, height:160,
-            borderRadius:'50%', border:'1.5px solid rgba(30,58,138,0.07)', pointerEvents:'none', zIndex:0 }} />
+            borderRadius:'50%', border:'1.5px solid rgba(20,56,148,0.07)', pointerEvents:'none', zIndex:0 }} />
           {/* Petit cercle cyan bas-gauche */}
           <div style={{ position:'absolute', bottom:-60, left:-60, width:200, height:200,
             borderRadius:'50%', background:'rgba(6,182,212,0.06)', pointerEvents:'none', zIndex:0 }} />
@@ -300,7 +299,7 @@ export default function Login() {
             borderRadius:'50%', border:'1px solid rgba(6,182,212,0.1)', pointerEvents:'none', zIndex:0 }} />
           {/* Point décoratif discret */}
           <div style={{ position:'absolute', top:'42%', right:24, width:7, height:7,
-            borderRadius:'50%', background:'rgba(30,58,138,0.12)', pointerEvents:'none', zIndex:0 }} />
+            borderRadius:'50%', background:'rgba(20,56,148,0.12)', pointerEvents:'none', zIndex:0 }} />
           <div style={{ position:'absolute', top:'48%', right:16, width:4, height:4,
             borderRadius:'50%', background:'rgba(6,182,212,0.2)', pointerEvents:'none', zIndex:0 }} />
 
@@ -308,15 +307,12 @@ export default function Login() {
           <div className="relative z-10">
 
             {/* Logo + identité — logo agrandi */}
-            <motion.div {...rise(0.28)} className="flex items-center gap-3 mb-7">
+            <motion.div {...rise(0.28)} className="flex items-center gap-3 mb-6 sm:mb-7">
               <motion.div
                 whileHover={{ scale:1.08, rotate:3 }}
                 transition={{ type:'spring', stiffness:300, damping:16 }}
-                className="rounded-full overflow-hidden shrink-0"
-                style={{
-                  width: 84, height: 84,
-                  boxShadow: '0 0 0 4px rgba(30,58,138,0.13)',
-                }}
+                className="rounded-full overflow-hidden shrink-0 w-16 h-16 sm:w-[84px] sm:h-[84px]"
+                style={{ boxShadow: '0 0 0 4px rgba(20,56,148,0.13)' }}
               >
                 <img src={logoFs} alt="FS-UEB" className="w-full h-full object-cover" />
               </motion.div>
@@ -329,15 +325,15 @@ export default function Login() {
             {/* Titre — une seule ligne, Plus Jakarta Sans ExtraBold */}
             <motion.div {...rise(0.36)} className="mb-7">
               <h1
-                className="text-ink-strong leading-none whitespace-nowrap"
+                className="text-ink-strong leading-tight"
                 style={{
                   fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  fontSize: 28,
+                  fontSize: 'clamp(1.5rem, 6vw, 1.75rem)',
                   fontWeight: 800,
                   letterSpacing: '-0.02em',
                 }}
               >
-                Bienvenue sur <span style={{ color:'#1E3A8A' }}>ChronoFS</span>
+                Bienvenue sur <span style={{ color:'#143894' }}>ChronoFS</span>
               </h1>
               <p className="text-ink-muted text-sm mt-2 leading-relaxed">
                 Accédez à votre espace pour gérer les emplois du temps.

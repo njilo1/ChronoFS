@@ -12,7 +12,7 @@ const iCls = 'input-field';
 function F({ label, children }) {
   return (
     <div>
-      <label className="text-[11px] font-bold text-ink-muted uppercase tracking-widest mb-1.5 block">{label}</label>
+      <label className="text-[11px] font-bold text-ink-muted dark:text-ink-dark-muted uppercase tracking-widest mb-1.5 block">{label}</label>
       {children}
     </div>
   );
@@ -30,7 +30,7 @@ const BLANK = { nom: '', code: '', departement: '', niveau: 'L1', ville: 'EBOLOW
 
 const COLS = [
   { key: 'code', label: 'Code', render: r => (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold bg-surface-alt text-ink border border-line">{r.code}</span>
+    <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold bg-surface-alt dark:bg-surface-dark-alt text-ink dark:text-ink-dark border border-line dark:border-line-dark">{r.code}</span>
   )},
   { key: 'nom', label: 'Filière' },
   { key: 'niveau', label: 'Niveau', render: r => (

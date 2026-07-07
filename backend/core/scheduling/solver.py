@@ -28,13 +28,16 @@ Contraintes DURES (jamais violées) :
         campus pour toute la semaine : pas de saut de campus entre deux
         créneaux, même au sein de la même ville.
 
-Objectif (lexicographique, encodé par poids w1 ≫ w2 ≫ w3 ≫ w4) :
+Objectif (lexicographique, encodé par poids w1 ≫ w2 ≫ w3 ≫ w_cont ≫ w_cap) :
     1. Maximiser le NOMBRE de cours placés → « tous les cours de la
        semaine doivent être faits ».
     2. Priorité aux VACATAIRES (leurs cours passent avant les permanents).
     3. Équité entre filières : à nombre de cours égal, sacrifier d'abord
        les filières les plus programmées pour caser les autres.
-    4. Ajuster capacité ≈ effectif : minimiser le gaspillage de places et
+    4. CONTINUITÉ de salle : une classe garde la même salle d'un créneau au
+       suivant et d'un jour à l'autre (on minimise le nombre de salles
+       distinctes par filière sur la semaine) → pas de déménagement inutile.
+    5. Ajuster capacité ≈ effectif : minimiser le gaspillage de places et
        n'utiliser le forçage (sur-effectif) qu'en dernier recours.
 
 L'algorithme renvoie pour chaque demande non placée la liste des raisons
@@ -54,6 +57,7 @@ from core.constants import (
     Creneau,
     Jour,
     SALLES_AUTORISEES_PAR_TYPE_COURS,
+    salle_speciale_requise,
     StatutEnseignant,
     TOLERANCE_SURCAPACITE,
     TypeSalle,
@@ -167,7 +171,19 @@ class PlanningSolver:
                 continue
 
             ville_demande = d.filiere.ville
-            types_autorises = SALLES_AUTORISEES_PAR_TYPE_COURS.get(d.type_cours, [])
+
+            # Salle spéciale SBAA (terrain pour les TP, labo pour la chimie) :
+            # si la règle impose un type, il prime sur la liste générale —
+            # le terrain/labo n'est candidat QUE dans ce cas précis.
+            type_special = salle_speciale_requise(
+                d.filiere.departement.code, d.type_cours,
+                getattr(d.ue, 'intitule', None),
+            )
+            if type_special is not None:
+                types_autorises = [type_special]
+            else:
+                types_autorises = SALLES_AUTORISEES_PAR_TYPE_COURS.get(d.type_cours, [])
+
             effectif = self._effectif(d)
 
             # H7bis — campus imposé (surcharge optionnelle de la ville).
@@ -247,8 +263,12 @@ class PlanningSolver:
                 self.placee[d_idx] = 0
 
         # ── H2 : ≤ 1 cours par (salle, jour, créneau) ────────────────────────
+        # Exception : le TERRAIN accueille plusieurs filières SBAA en même temps
+        # (capacité illimitée) → on ne lui applique pas l'unicité.
         salle_creneau_vars: dict[tuple[int, int, int], list[cp_model.IntVar]] = defaultdict(list)
         for (d_idx, s_idx), var in self.x.items():
+            if self.salles[s_idx].type_salle == TypeSalle.TERRAIN:
+                continue
             d = self.demandes[d_idx]
             salle_creneau_vars[(s_idx, d.jour, d.creneau)].append(var)
         for vars_groupe in salle_creneau_vars.values():
@@ -339,17 +359,37 @@ class PlanningSolver:
             nb_dem_fil[d.filiere_id] += 1
         max_dem = max(nb_dem_fil.values(), default=1)
 
+        # ── Continuité de salle : variables u[(filiere, salle)] ──────────────
+        # u = 1 dès qu'un cours de la filière (n'importe quel jour/créneau de la
+        # semaine) occupe cette salle. Minimiser Σu = minimiser le nombre de
+        # salles DISTINCTES par filière : une classe garde la même salle d'un
+        # créneau au suivant ET d'un jour à l'autre (ex. TIC L2 reste en salle M
+        # toute la semaine), et n'en change que lorsque c'est inévitable (salle
+        # occupée, TP au terrain, etc.).
+        fs_vars: dict[tuple[int, int], list[cp_model.IntVar]] = defaultdict(list)
+        for (d_idx, s_idx), var in self.x.items():
+            fs_vars[(self.demandes[d_idx].filiere_id, s_idx)].append(var)
+        u_cont: dict[tuple[int, int], cp_model.IntVar] = {}
+        for key, vars_grp in fs_vars.items():
+            u = self.model.NewBoolVar(f'u_f{key[0]}_s{key[1]}')
+            for v in vars_grp:
+                self.model.Add(v <= u)   # toute séance dans la salle lève u
+            u_cont[key] = u
+
         # Bornes des termes de bas niveau, pour caler des poids garantissant
         # un ordre LEXICOGRAPHIQUE strict (un cours placé en plus prime
-        # toujours sur n'importe quel gain de niveau inférieur).
+        # toujours sur n'importe quel gain de niveau inférieur) :
+        #   cours ≫ vacataires ≫ équité ≫ continuité ≫ capacité.
         cap_borne = FACTEUR_SURCHARGE * (cap_max + eff_max) + 1   # mismatch max / placement
-        total4 = n * cap_borne                                    # capacité (w4 = 1)
-        w4 = 1
-        w3 = total4 + 1                                           # équité
+        w_cap = 1                                                 # 5. capacité
+        total_cap = n * cap_borne
+        w_cont = total_cap + 1                                    # 4. continuité salle
+        total_cont = len(u_cont) * w_cont
+        w3 = total_cont + total_cap + 1                           # 3. équité
         total3 = (n * max_dem) * w3
-        w2 = total3 + total4 + 1                                  # vacataires
+        w2 = total3 + total_cont + total_cap + 1                  # 2. vacataires
         total2 = n * w2
-        w1 = total2 + total3 + total4 + 1                        # nombre de cours
+        w1 = total2 + total3 + total_cont + total_cap + 1         # 1. nombre de cours
 
         termes = []
         for d_idx, d in enumerate(self.demandes):
@@ -365,7 +405,11 @@ class PlanningSolver:
             if bonus_equite > 0:
                 termes.append((w3 * bonus_equite) * placee)
 
-        # 4. Capacité ≈ effectif : pénalité (gaspillage ou surcharge) à minimiser.
+        # 4. Continuité : pénalité par salle distincte utilisée par la filière.
+        for u in u_cont.values():
+            termes.append(-w_cont * u)
+
+        # 5. Capacité ≈ effectif : pénalité (gaspillage ou surcharge) à minimiser.
         for (d_idx, s_idx), var in self.x.items():
             effectif = self._effectif(self.demandes[d_idx])
             capacite = self.salles[s_idx].capacite
@@ -376,7 +420,7 @@ class PlanningSolver:
             else:
                 cout = (effectif - capacite) * FACTEUR_SURCHARGE  # forçage = pénalisé
             if cout:
-                termes.append(-(w4 * cout) * var)
+                termes.append(-(w_cap * cout) * var)
 
         self.model.Maximize(sum(termes))
 

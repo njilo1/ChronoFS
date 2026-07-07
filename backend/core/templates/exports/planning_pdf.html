@@ -126,10 +126,12 @@
 
     table.grille td {
       border: 0.5pt solid var(--bord);
-      padding: 1.8mm 1.5mm;
+      padding: 1.6mm 1.5mm;
       vertical-align: middle;
       text-align: center;
-      height: 22mm;
+      /* Hauteur minimale : la cellule grandit si l'intitulé s'enroule sur
+         2-3 lignes, sans rogner le contenu. */
+      height: 20mm;
     }
     /* Pages sans en-tête (2e salle et +) : lignes plus hautes pour remplir
        l'espace libéré par l'en-tête, et éviter un grand vide en bas. */
@@ -144,11 +146,30 @@
       width: 23mm;
     }
 
-    /* Cellule de cours : sobre (noir), police imposante */
-    .cours .classe   { font-weight: bold; color: var(--encre); font-size: 9.5pt; line-height: 1.12; }
-    .cours .ue       { font-weight: bold; color: var(--encre); font-size: 10pt; letter-spacing: 0.4pt; margin: 0.4mm 0; }
-    .cours .intitule { color: #111; font-size: 8.5pt; line-height: 1.15; }
-    .cours .prof     { color: #222; font-style: italic; font-size: 8.5pt; margin-top: 0.4mm; }
+    /* Cellule de cours : sobre (noir), police compacte (format A4) */
+    .cours .classe   { font-weight: bold; color: var(--encre); font-size: 8.5pt; line-height: 1.1; }
+    .cours .ue       { font-weight: bold; color: var(--encre); font-size: 9pt; letter-spacing: 0.3pt; margin: 0.3mm 0; }
+    .cours .intitule { color: #111; font-size: 7.5pt; line-height: 1.12; }
+    .cours .prof     { color: #222; font-style: italic; font-size: 7.5pt; margin-top: 0.3mm; }
+
+    /* Identifiants courts (code UE / enseignant) : une seule ligne,
+       troncature « … » en filet de sécurité s'ils débordent. */
+    .cours .ue,
+    .cours .prof {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    /* Classe et intitulé de l'UE : peuvent s'étaler sur 2-3 lignes pour rester
+       ENTIÈREMENT lisibles (les longs noms ne sont jamais tronqués). La cellule
+       grandit en conséquence sans rien rogner. */
+    .cours .classe,
+    .cours .intitule {
+      white-space: normal;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
 
     td.vide { background: #FCFCFC; }
 

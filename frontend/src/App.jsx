@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import useAuthStore from './store/authStore';
 import Layout from './components/layout/Layout';
 import Login from './pages/Login';
+import Landing from './pages/Landing';
 
 import DarDashboard       from './pages/dar/Dashboard';
 import DarSemaines        from './pages/dar/Semaines';
@@ -41,12 +42,19 @@ function RoleRedirect() {
   return <Navigate to="/login" replace />;
 }
 
+/* Accueil : landing publique pour les visiteurs, redirection vers
+   l'espace métier pour les utilisateurs déjà connectés. */
+function HomeGate() {
+  const { token } = useAuthStore();
+  return token ? <RoleRedirect /> : <Landing />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/"      element={<RoleRedirect />} />
+        <Route path="/"      element={<HomeGate />} />
 
         {/* DAR */}
         <Route path="/dar" element={<Protected role="DAR"><Layout /></Protected>}>
