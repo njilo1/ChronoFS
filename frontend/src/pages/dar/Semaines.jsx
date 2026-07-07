@@ -16,7 +16,7 @@ const iCls = 'w-full bg-white dark:bg-surface-dark-alt border border-line dark:b
 function F({ label, children }) {
   return (
     <div>
-      <label className="text-[11px] font-bold text-ink-muted uppercase tracking-widest mb-1.5 block">{label}</label>
+      <label className="text-[11px] font-bold text-ink-muted dark:text-ink-dark-muted uppercase tracking-widest mb-1.5 block">{label}</label>
       {children}
     </div>
   );
@@ -244,10 +244,10 @@ export default function Semaines() {
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="min-w-0">
                     {/* Dates */}
-                    <p className="text-ink font-bold text-base leading-tight">
+                    <p className="text-ink dark:text-ink-dark-strong font-bold text-base leading-tight">
                       Du {fmtDate(sw.date_debut)} au {fmtDate(sw.date_fin)}
                     </p>
-                    <p className="text-ink-muted text-xs mt-1">
+                    <p className="text-ink-muted dark:text-ink-dark-muted text-xs mt-1">
                       {sw.annee_academique?.libelle && `Année ${sw.annee_academique.libelle} · `}
                       Semestre {sw.semestre}
                       {sw.numero_reference && ` · Réf. ${sw.numero_reference}`}
@@ -257,13 +257,13 @@ export default function Semaines() {
                     <div className="flex items-center gap-1 mt-3">
                       {STEP_ORDER.map((s, si) => (
                         <div key={s} className="flex items-center gap-1">
-                          <div className={`w-2 h-2 rounded-full transition-colors ${si <= stepIdx ? 'bg-primary-700' : 'bg-line'}`} />
+                          <div className={`w-2 h-2 rounded-full transition-colors ${si <= stepIdx ? 'bg-primary-700 dark:bg-primary-400' : 'bg-line dark:bg-line-dark-strong'}`} />
                           {si < STEP_ORDER.length - 1 && (
-                            <div className={`w-4 h-px ${si < stepIdx ? 'bg-primary-300' : 'bg-line'}`} />
+                            <div className={`w-4 h-px ${si < stepIdx ? 'bg-primary-300 dark:bg-primary-600' : 'bg-line dark:bg-line-dark-strong'}`} />
                           )}
                         </div>
                       ))}
-                      <span className="text-[10px] text-ink-subtle ml-1.5">
+                      <span className="text-[10px] text-ink-subtle dark:text-ink-dark-subtle ml-1.5">
                         {STEP_LABELS[stepIdx] ?? sw.statut}
                       </span>
                     </div>

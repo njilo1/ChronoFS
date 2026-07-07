@@ -253,9 +253,16 @@ class Enseignant(models.Model):
 class UE(models.Model):
     """Unité d'Enseignement (matière) rattachée à une filière précise."""
 
+    # En Faculté des Sciences, une UE vaut soit 3, soit 6 crédits.
+    CREDITS_CHOICES = [(3, '3 crédits'), (6, '6 crédits')]
+
     code     = models.CharField(max_length=20, unique=True)
     intitule = models.CharField(max_length=200)
     filiere  = models.ForeignKey(Filiere, on_delete=models.CASCADE, related_name='ues')
+    credits  = models.PositiveSmallIntegerField(
+        choices=CREDITS_CHOICES, default=6,
+        help_text='Nombre de crédits de l’UE (3 ou 6 en FS).',
+    )
 
     class Meta:
         verbose_name        = 'UE'

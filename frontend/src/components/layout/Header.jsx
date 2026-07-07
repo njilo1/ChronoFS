@@ -37,7 +37,9 @@ export default function Header() {
     navigate('/login', { replace: true });
   };
 
-  const displayName = user?.nom || user?.username || 'Utilisateur';
+  // On affiche le nom d'utilisateur (username) : il est modifiable dans « Mon
+  // profil » et se répercute ici dès l'enregistrement (le store est rafraîchi).
+  const displayName = user?.username || user?.nom || 'Utilisateur';
   const initials    = getInitials(displayName);
 
   // Couleurs réactives directement depuis le state — indépendantes de la

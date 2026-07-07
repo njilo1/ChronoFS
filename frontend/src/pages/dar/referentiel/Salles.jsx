@@ -12,7 +12,7 @@ const iCls = 'input-field';
 function F({ label, children }) {
   return (
     <div>
-      <label className="text-[11px] font-bold text-ink-muted uppercase tracking-widest mb-1.5 block">{label}</label>
+      <label className="text-[11px] font-bold text-ink-muted dark:text-ink-dark-muted uppercase tracking-widest mb-1.5 block">{label}</label>
       {children}
     </div>
   );

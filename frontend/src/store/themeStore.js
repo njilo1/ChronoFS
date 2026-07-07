@@ -1,11 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-function getSystemTheme() {
-  if (typeof window === 'undefined') return 'light';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
 function applyDom(theme) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
@@ -17,7 +12,9 @@ function applyDom(theme) {
 const useThemeStore = create(
   persist(
     (set, get) => ({
-      theme: getSystemTheme(),
+      // Mode clair par défaut au premier lancement. L'utilisateur peut ensuite
+      // activer le mode sombre via le bouton ; son choix est alors mémorisé.
+      theme: 'light',
       setTheme: (theme) => { applyDom(theme); set({ theme }); },
       toggle:   ()      => {
         const next = get().theme === 'dark' ? 'light' : 'dark';
@@ -27,6 +24,12 @@ const useThemeStore = create(
     }),
     {
       name: 'fschrono-theme',
+      version: 2,
+      // Les versions précédentes pouvaient mémoriser un thème sombre (déduit des
+      // préférences système, ou choisi lors d'un test), ce qui rouvrait l'app en
+      // sombre. On repart du mode clair une seule fois (pour tout état antérieur
+      // v0/v1) ; les bascules ultérieures de l'utilisateur restent mémorisées.
+      migrate: () => ({ theme: 'light' }),
       onRehydrateStorage: () => (state) => {
         if (state?.theme) applyDom(state.theme);
       },
@@ -34,7 +37,7 @@ const useThemeStore = create(
   )
 );
 
-// Synchronise le DOM dès le chargement du module (avant React mount).
+// Synchronise le DOM dès le chargement du module (avant le montage React).
 if (typeof window !== 'undefined') {
   applyDom(useThemeStore.getState().theme);
 }
