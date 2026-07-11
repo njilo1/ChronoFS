@@ -166,10 +166,11 @@ class StatutParsing(models.TextChoices):
     ECHEC      = 'ECHEC',      'Échec'
 
 
-# ── Rôles utilisateurs (2 seuls) ─────────────────────────────────────────────
+# ── Rôles utilisateurs ───────────────────────────────────────────────────────
 class Role(models.TextChoices):
-    DAR       = 'DAR',       "Division des Affaires Académiques"
-    CHEF_DEPT = 'CHEF_DEPT', 'Chef de département'
+    SUPERADMIN = 'SUPERADMIN', 'Super administrateur'
+    DAR        = 'DAR',        "Division des Affaires Académiques"
+    CHEF_DEPT  = 'CHEF_DEPT',  'Chef de département'
 
 
 # ── Types de notification (interactions entre acteurs) ───────────────────────
@@ -207,3 +208,41 @@ class StatutEnseignant(models.TextChoices):
 # peut monter à ~70). Le solver pénalise ce forçage pour ne l'utiliser qu'en
 # dernier recours (cf. objectif S « capacité ≈ effectif »).
 TOLERANCE_SURCAPACITE = 0.40
+
+
+# ── Configuration du solver (règles & objectifs pilotés par le super-admin) ──
+# La faculté est jeune et évolue : le super-admin peut activer/désactiver et
+# ajouter des règles/objectifs SANS toucher au code. Ces enums qualifient les
+# entrées du registre (cf. core/scheduling/registre.py).
+class TypeRegle(models.TextChoices):
+    """Nature d'une contrainte du solver."""
+
+    DURE   = 'DURE',   'Contrainte dure (jamais violée)'
+    SOUPLE = 'SOUPLE', 'Contrainte souple (préférence)'
+
+
+class CategorieRegle(models.TextChoices):
+    """
+    STATIQUE : règle fondatrice, toujours appliquée (verrouillée). Les 9 règles
+               dures H1–H9 actuelles sont statiques.
+    DYNAMIQUE : règle qui peut varier d'une génération à l'autre (le DAR la
+               coche/décoche dans la modale de génération).
+    """
+
+    STATIQUE  = 'STATIQUE',  'Statique (toujours appliquée)'
+    DYNAMIQUE = 'DYNAMIQUE', 'Dynamique (activable par génération)'
+
+
+class SensObjectif(models.TextChoices):
+    """Sens d'optimisation d'une fonction objectif."""
+
+    MAX = 'MAX', 'Maximiser'
+    MIN = 'MIN', 'Minimiser'
+
+
+class PorteeRegle(models.TextChoices):
+    """Périmètre d'application d'une règle dynamique paramétrée."""
+
+    GLOBAL      = 'GLOBAL',      'Toute la faculté'
+    DEPARTEMENT = 'DEPARTEMENT', 'Un département'
+    FILIERE     = 'FILIERE',     'Une filière'

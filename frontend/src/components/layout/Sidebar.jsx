@@ -11,6 +11,7 @@ import {
   DoorOpen, Building2, GraduationCap, Users,
   BookOpen, FileUp, UserCog, Archive, CalendarDays,
   History, LayoutGrid, X,
+  ShieldCheck, SlidersHorizontal, Target, ScrollText,
 } from 'lucide-react';
 
 const DAR_NAV = [
@@ -36,6 +37,15 @@ const CHEF_NAV = [
   { label: 'Mes Enseignants', to: '/chef/enseignants',        icon: Users },
   { label: 'Historique',      to: '/chef/historique-envois',  icon: History },
   { label: 'Mon planning',    to: '/chef/planning',           icon: LayoutGrid },
+];
+
+const ADMIN_NAV = [
+  { label: 'Tableau de bord', to: '/superadmin',              icon: LayoutDashboard, end: true },
+  { label: 'Comptes',         to: '/superadmin/comptes',      icon: UserCog },
+  { type: 'sep', label: 'Configuration solver' },
+  { label: 'Contraintes',     to: '/superadmin/contraintes',  icon: SlidersHorizontal },
+  { label: 'Fonctions objectif', to: '/superadmin/objectifs', icon: Target },
+  { label: 'Journal',         to: '/superadmin/journal',      icon: ScrollText },
 ];
 
 /* ───────────────────────────────────────────────────────────────────────
@@ -252,7 +262,9 @@ function SidebarBody({ items, role, open, notchColor, animate = true, onNavigate
           <div className="flex items-center gap-2.5">
             <span className="pulse-dot bg-gold-400" />
             <p className="text-[9px] uppercase tracking-[0.22em] text-white/55 font-bold leading-snug">
-              {role === 'DAR' ? 'Div. Affaires Académiques' : 'Chef de Département'}
+              {role === 'SUPERADMIN' ? 'Super-administrateur'
+                : role === 'DAR'     ? 'Div. Affaires Académiques'
+                : 'Chef de Département'}
             </p>
           </div>
         ) : (
@@ -272,7 +284,9 @@ export default function Sidebar() {
   const isDark              = theme === 'dark';
   const isDesktop           = useIsDesktop();
   const location            = useLocation();
-  const items               = role === 'DAR' ? DAR_NAV : CHEF_NAV;
+  const items               = role === 'SUPERADMIN' ? ADMIN_NAV
+                            : role === 'DAR'        ? DAR_NAV
+                            : CHEF_NAV;
   const open                = !sidebarCollapsed;
 
   const bgSidebar  = isDark ? '#06091A' : '#143894';

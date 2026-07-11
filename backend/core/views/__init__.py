@@ -25,6 +25,13 @@ from .imports import (
 )
 from .seances import PlanningActuelView, SeanceViewSet
 from .notifications import NotificationViewSet
+from .configuration import (
+    FonctionObjectifViewSet,
+    JournalGenerationViewSet,
+    RegleSolverViewSet,
+    StatsSuperAdminView,
+)
+from .comptes import CompteViewSet
 
 
 __all__ = [
@@ -48,4 +55,9 @@ __all__ = [
     'SeanceViewSet', 'PlanningActuelView',
     # Notifications
     'NotificationViewSet',
+    # Configuration solver (super-admin)
+    'RegleSolverViewSet', 'FonctionObjectifViewSet',
+    'JournalGenerationViewSet', 'StatsSuperAdminView',
+    # Comptes (super-admin)
+    'CompteViewSet',
 ]

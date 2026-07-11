@@ -29,7 +29,9 @@ TITRE_MEMOIRE = ("CONCEPTION ET RÉALISATION D'UNE APPLICATION WEB DE GÉNÉRATI
 AUTEUR = "TCHAMBA NJILO FERDINAND"
 MATRICULE = "23I0076FS"
 ENCADREUR_1 = "Dr KENGNI OLGA"
+GRADE_ENCADREUR_1 = "Chargée de Cours"
 ENCADREUR_2 = "Dr NYABEYE DORIS"
+GRADE_ENCADREUR_2 = "Assistante"
 ANNEE_ACAD = "2025 - 2026"
 
 ROMAN_CHAP = {1: "I", 2: "II", 3: "III"}
@@ -108,6 +110,33 @@ def set_footer_page_number(section, align=WD_ALIGN_PARAGRAPH.RIGHT):
     add_field(p, "PAGE")
 
 
+def set_title_page(section, enable=True):
+    """Active w:titlePg : la 1ere page de la section a son propre pied de
+    page (utilise pour masquer le numero sur la page de titre de chapitre,
+    conformement a la charte, sans casser la continuite de la numerotation)."""
+    sectPr = section._sectPr
+    titlePg = sectPr.find(qn('w:titlePg'))
+    if enable and titlePg is None:
+        sectPr.append(OxmlElement('w:titlePg'))
+    elif not enable and titlePg is not None:
+        sectPr.remove(titlePg)
+
+
+def start_chapter_section(doc):
+    """Nouvelle section pour un chapitre : la 1ere page (titre du chapitre)
+    n'affiche pas de numero de page, mais la numerotation continue reste
+    inchangee pour les pages suivantes (charte : page de garde de chapitre
+    non numerotee)."""
+    sec = new_section(doc, unlink_footer=True)
+    set_title_page(sec, True)
+    set_footer_page_number(sec)
+    fp_footer = sec.first_page_footer
+    fp_footer.is_linked_to_previous = False
+    for p in list(fp_footer.paragraphs):
+        p.clear()
+    return sec
+
+
 def enable_update_fields_on_open(doc):
     element = doc.settings.element
     upd = OxmlElement('w:updateFields')
@@ -123,6 +152,11 @@ fig_counter = 0
 tab_counter = 0
 
 
+def _style_caption_run(run):
+    set_font(run, size=11, bold=True, italic=True)
+    run.font.underline = True
+
+
 def add_figure(doc, filename, caption, width_cm=14):
     global fig_counter
     fig_counter += 1
@@ -134,10 +168,10 @@ def add_figure(doc, filename, caption, width_cm=14):
     cap = doc.add_paragraph()
     cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
     cap.paragraph_format.space_after = Pt(12)
-    r1 = cap.add_run(f"Figure {fig_counter}. ")
-    set_font(r1, size=11, bold=True)
-    r2 = cap.add_run(caption)
-    set_font(r2, size=11, bold=False, italic=True)
+    r0 = cap.add_run("Figure "); _style_caption_run(r0)
+    rseq = add_field(cap, 'SEQ Figure \\* ARABIC', str(fig_counter)); _style_caption_run(rseq)
+    r1 = cap.add_run(" : "); _style_caption_run(r1)
+    r2 = cap.add_run(caption); _style_caption_run(r2)
     return fig_counter
 
 
@@ -145,11 +179,12 @@ def add_table_caption(doc, title):
     global tab_counter
     tab_counter += 1
     cap = doc.add_paragraph()
+    cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
     cap.paragraph_format.space_after = Pt(4)
-    r1 = cap.add_run(f"Tableau {tab_counter}. ")
-    set_font(r1, size=11, bold=True)
-    r2 = cap.add_run(title)
-    set_font(r2, size=11, bold=False, italic=True)
+    r0 = cap.add_run("Tableau "); _style_caption_run(r0)
+    rseq = add_field(cap, 'SEQ Tableau \\* ARABIC', str(tab_counter)); _style_caption_run(rseq)
+    r1 = cap.add_run(" : "); _style_caption_run(r1)
+    r2 = cap.add_run(title); _style_caption_run(r2)
     return tab_counter
 
 
@@ -196,28 +231,24 @@ def add_rich_paragraph(doc, text, size=12, align_justify=True, italic=False):
     return p
 
 
-def add_heading(doc, text, level=1, size=14):
-    p = doc.add_paragraph()
-    p.paragraph_format.space_before = Pt(14)
-    p.paragraph_format.space_after = Pt(8)
-    p.paragraph_format.keep_with_next = True
-    r = p.add_run(text)
-    set_font(r, size=size, bold=True)
+def add_heading(doc, text, level=1):
+    """Utilise les styles Word natifs Heading 1/2/3 (configures en TNR par
+    configure_heading_styles) afin que la table des matieres (champ TOC)
+    detecte automatiquement ces titres."""
+    p = doc.add_paragraph(text, style=f'Heading {level}')
     return p
 
 
 def add_chapter_divider(doc, roman, title):
-    """Page de garde de chapitre (non numerotee dans le flux visuel)."""
+    """Page de garde de chapitre (non numerotee dans le flux visuel).
+    Un seul paragraphe Heading 1 (pour la table des matieres), mis en
+    valeur visuellement en grand et centre sur sa propre page."""
     for _ in range(6):
         doc.add_paragraph()
-    p1 = doc.add_paragraph()
+    p1 = add_heading(doc, f"CHAPITRE {roman} : {title.upper()}", level=1)
     p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r1 = p1.add_run(f"CHAPITRE {roman}")
-    set_font(r1, size=20, bold=True)
-    p2 = doc.add_paragraph()
-    p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r2 = p2.add_run(title.upper())
-    set_font(r2, size=16, bold=True)
+    for r in p1.runs:
+        set_font(r, size=18, bold=True)
     doc.add_page_break()
 
 
@@ -245,6 +276,27 @@ def parse_blocks(md_text):
     return blocks
 
 
+def add_compact_body(doc, body_lines, size=11):
+    """Paragraphes en interligne simple et espacement reduit, pour le bloc
+    Resume/Abstract que la charte limite a une page."""
+    for line in body_lines:
+        line = line.strip()
+        if not line:
+            continue
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
+        p.paragraph_format.space_after = Pt(6)
+        parts = re.split(r"(\*\*.*?\*\*)", line)
+        for part in parts:
+            if not part:
+                continue
+            if part.startswith("**") and part.endswith("**"):
+                r = p.add_run(part[2:-2]); set_font(r, size=size, bold=True)
+            else:
+                r = p.add_run(part); set_font(r, size=size, bold=False)
+
+
 def render_body(doc, body_lines, chapter_num=None):
     i = 0
     n = len(body_lines)
@@ -258,7 +310,7 @@ def render_body(doc, body_lines, chapter_num=None):
         if m:
             c, s, title = m.groups()
             label = f"{ROMAN_CHAP.get(chapter_num, c)}.{s}. {title}" if chapter_num else f"{c}.{s}. {title}"
-            add_heading(doc, label, size=14)
+            add_heading(doc, label, level=2)
             i += 1
             continue
         # Heading level 3 (#### N.M.K. Title)
@@ -266,7 +318,7 @@ def render_body(doc, body_lines, chapter_num=None):
         if m:
             c, s, sub, title = m.groups()
             label = f"{ROMAN_CHAP.get(chapter_num, c)}.{s}.{sub}. {title}" if chapter_num else f"{c}.{s}.{sub}. {title}"
-            add_heading(doc, label, size=13)
+            add_heading(doc, label, level=3)
             i += 1
             continue
         # Figure marker
@@ -322,83 +374,156 @@ def render_body(doc, body_lines, chapter_num=None):
 # Pages liminaires specifiques (non markdown)
 # ---------------------------------------------------------------------------
 
+def _cell_center(cell):
+    for p in cell.paragraphs:
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    return cell
+
+
+def _no_borders(table):
+    tbl = table._tbl
+    tblPr = tbl.tblPr
+    borders = OxmlElement('w:tblBorders')
+    for edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
+        el = OxmlElement(f'w:{edge}')
+        el.set(qn('w:val'), 'nil')
+        borders.append(el)
+    tblPr.append(borders)
+
+
+def _tight(paragraph, space_before=0, space_after=6):
+    """Espacement maitrise pour la page de garde (sinon l'interligne 1.5
+    global du style Normal fait deborder la couverture sur 2 pages)."""
+    pf = paragraph.paragraph_format
+    pf.line_spacing_rule = WD_LINE_SPACING.SINGLE
+    pf.space_before = Pt(space_before)
+    pf.space_after = Pt(space_after)
+    return paragraph
+
+
+def _cp(doc, text="", size=11, bold=False, italic=False, space_before=0, space_after=6):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _tight(p, space_before, space_after)
+    if text:
+        r = p.add_run(text)
+        set_font(r, size=size, bold=bold, italic=italic)
+    return p
+
+
+def _keep_table_together(table):
+    for row in table.rows:
+        trPr = row._tr.get_or_add_trPr()
+        cant_split = OxmlElement('w:cantSplit')
+        trPr.append(cant_split)
+
+
 def add_cover_page(doc):
-    p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run("RÉPUBLIQUE DU CAMEROUN"); set_font(r, size=11, bold=True)
-    p2 = doc.add_paragraph(); p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r2 = p2.add_run("Paix - Travail - Patrie"); set_font(r2, size=10, italic=True)
+    # --- En-tete bilingue FR / logos / EN, sur 3 colonnes sans bordures ---
+    header = doc.add_table(rows=1, cols=3)
+    _no_borders(header)
+    _keep_table_together(header)
+    header.autofit = True
+    fr_cell, logo_cell, en_cell = header.rows[0].cells
 
-    if LOGO_UEB.exists() or LOGO_FS.exists():
-        pl = doc.add_paragraph(); pl.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        if LOGO_UEB.exists():
-            run = pl.add_run(); run.add_picture(str(LOGO_UEB), width=Cm(2.6))
-            pl.add_run("      ")
-        if LOGO_FS.exists():
-            run2 = pl.add_run(); run2.add_picture(str(LOGO_FS), width=Cm(2.6))
+    fr_lines = ["RÉPUBLIQUE DU CAMEROUN", "Paix - Travail - Patrie",
+                "MINISTÈRE DE L'ENSEIGNEMENT SUPÉRIEUR",
+                "UNIVERSITÉ D'ÉBOLOWA", "FACULTÉ DES SCIENCES"]
+    en_lines = ["REPUBLIC OF CAMEROON", "Peace - Work - Fatherland",
+                "MINISTRY OF HIGHER EDUCATION",
+                "THE UNIVERSITY OF EBOLOWA", "FACULTY OF SCIENCE"]
 
-    for title, size in [("UNIVERSITÉ D'ÉBOLOWA", 13), ("FACULTÉ DES SCIENCES", 13),
-                          ("DÉPARTEMENT DES TECHNOLOGIES DE L'INFORMATION ET DE LA COMMUNICATION", 12)]:
-        p3 = doc.add_paragraph(); p3.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r3 = p3.add_run(title); set_font(r3, size=size, bold=True)
+    fr_cell.text = ""
+    for j, line in enumerate(fr_lines):
+        p = fr_cell.paragraphs[0] if j == 0 else fr_cell.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        _tight(p, 0, 3)
+        r = p.add_run(line); set_font(r, size=9, bold=False)
 
-    for _ in range(3):
-        doc.add_paragraph()
+    en_cell.text = ""
+    for j, line in enumerate(en_lines):
+        p = en_cell.paragraphs[0] if j == 0 else en_cell.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        _tight(p, 0, 3)
+        r = p.add_run(line); set_font(r, size=9, bold=False)
 
-    p4 = doc.add_paragraph(); p4.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r4 = p4.add_run("MÉMOIRE"); set_font(r4, size=16, bold=True)
-    p5 = doc.add_paragraph(); p5.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r5 = p5.add_run("présenté en vue de l'obtention de la Licence en Architecture des Logiciels")
-    set_font(r5, size=12, italic=True)
+    logo_cell.text = ""
+    lp = logo_cell.paragraphs[0]
+    lp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _tight(lp, 0, 2)
+    if LOGO_UEB.exists():
+        r = lp.add_run(); r.add_picture(str(LOGO_UEB), width=Cm(1.9))
+    lp2 = logo_cell.add_paragraph(); lp2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _tight(lp2, 0, 0)
+    if LOGO_FS.exists():
+        r2 = lp2.add_run(); r2.add_picture(str(LOGO_FS), width=Cm(1.9))
 
-    for _ in range(2):
-        doc.add_paragraph()
+    _cp(doc, space_after=10)
+    _cp(doc, "DÉPARTEMENT DES TECHNOLOGIES DE L'INFORMATION ET DE LA COMMUNICATION", size=11, bold=True, space_after=2)
+    _cp(doc, "DEPARTMENT OF INFORMATION AND COMMUNICATION TECHNOLOGIES", size=10, bold=True, italic=True, space_after=24)
 
-    p6 = doc.add_paragraph(); p6.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r6 = p6.add_run(TITRE_MEMOIRE); set_font(r6, size=15, bold=True)
+    _cp(doc, "MÉMOIRE", size=16, bold=True, space_after=6)
+    _cp(doc, "présenté en vue de l'obtention de la Licence en Architecture des Logiciels", size=11, italic=True, space_after=24)
 
-    for _ in range(2):
-        doc.add_paragraph()
+    # --- Titre du memoire, sobre : cadre noir simple (pas de couleur) ---
+    box = doc.add_table(rows=1, cols=1)
+    _keep_table_together(box)
+    box.rows[0].cells[0].text = ""
+    p6 = box.rows[0].cells[0].paragraphs[0]
+    p6.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _tight(p6, 6, 6)
+    r6 = p6.add_run(TITRE_MEMOIRE); set_font(r6, size=14, bold=True)
+    cell_tcPr = box.rows[0].cells[0]._tc.get_or_add_tcPr()
+    borders = OxmlElement('w:tcBorders')
+    for edge in ('top', 'left', 'bottom', 'right'):
+        el = OxmlElement(f'w:{edge}')
+        el.set(qn('w:val'), 'single'); el.set(qn('w:sz'), '8'); el.set(qn('w:color'), '000000')
+        borders.append(el)
+    cell_tcPr.append(borders)
 
-    p7 = doc.add_paragraph(); p7.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r7 = p7.add_run("Par"); set_font(r7, size=12)
-    p8 = doc.add_paragraph(); p8.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r8 = p8.add_run(AUTEUR); set_font(r8, size=14, bold=True)
-    p9 = doc.add_paragraph(); p9.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r9 = p9.add_run(f"Matricule : {MATRICULE}"); set_font(r9, size=11)
+    _cp(doc, space_after=24)
 
-    for _ in range(2):
-        doc.add_paragraph()
+    _cp(doc, "Par", size=11, space_after=4)
+    _cp(doc, AUTEUR, size=13, bold=True, space_after=4)
+    p9 = _cp(doc, space_after=20)
+    r9a = p9.add_run("Matricule : "); set_font(r9a, size=10, italic=True)
+    r9b = p9.add_run(MATRICULE); set_font(r9b, size=10, bold=True)
 
-    p10 = doc.add_paragraph(); p10.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r10 = p10.add_run("Sous la direction de"); set_font(r10, size=12)
-    p11 = doc.add_paragraph(); p11.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r11 = p11.add_run(ENCADREUR_1); set_font(r11, size=12, bold=True)
-    p12 = doc.add_paragraph(); p12.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r12 = p12.add_run(ENCADREUR_2); set_font(r12, size=12, bold=True)
+    _cp(doc, "Sous la direction de", size=11, space_after=8)
 
-    for _ in range(3):
-        doc.add_paragraph()
+    # --- Encadreurs en deux colonnes, comme le modele ---
+    enc = doc.add_table(rows=2, cols=2)
+    _no_borders(enc)
+    _keep_table_together(enc)
+    enc.rows[0].cells[0].text = ""; enc.rows[0].cells[1].text = ""
+    for cell, name in ((enc.rows[0].cells[0], ENCADREUR_1), (enc.rows[0].cells[1], ENCADREUR_2)):
+        p = cell.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.CENTER; _tight(p, 0, 2)
+        r = p.add_run(name); set_font(r, size=11, bold=True)
+    enc.rows[1].cells[0].text = ""; enc.rows[1].cells[1].text = ""
+    for cell, grade in ((enc.rows[1].cells[0], GRADE_ENCADREUR_1), (enc.rows[1].cells[1], GRADE_ENCADREUR_2)):
+        p = cell.paragraphs[0]; p.alignment = WD_ALIGN_PARAGRAPH.CENTER; _tight(p, 0, 0)
+        r = p.add_run(grade); set_font(r, size=10, italic=True)
 
-    p13 = doc.add_paragraph(); p13.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r13 = p13.add_run(f"Année académique : {ANNEE_ACAD}"); set_font(r13, size=12, bold=True)
+    _cp(doc, space_after=24)
+    _cp(doc, f"Année académique : {ANNEE_ACAD}", size=11, bold=True)
 
 
 def add_toc_page(doc):
-    add_heading(doc, "TABLE DES MATIÈRES", size=16)
+    add_heading(doc, "TABLE DES MATIÈRES", level=1)
     p = doc.add_paragraph()
     add_field(p, 'TOC \\o "1-3" \\h \\z \\u',
               result_text="Sommaire à générer : clic droit → Mettre à jour les champs (ou F9).")
 
 
 def add_list_figures_page(doc):
-    add_heading(doc, "LISTE DES FIGURES", size=16)
+    add_heading(doc, "LISTE DES FIGURES", level=1)
     p = doc.add_paragraph()
     add_field(p, 'TOC \\c "Figure"',
               result_text="Liste à générer : clic droit → Mettre à jour les champs (ou F9).")
 
 
 def add_list_tableaux_page(doc):
-    add_heading(doc, "LISTE DES TABLEAUX", size=16)
+    add_heading(doc, "LISTE DES TABLEAUX", level=1)
     p = doc.add_paragraph()
     add_field(p, 'TOC \\c "Tableau"',
               result_text="Liste à générer : clic droit → Mettre à jour les champs (ou F9).")
@@ -422,9 +547,35 @@ def set_base_styles(doc):
     pf.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
 
+def configure_heading_styles(doc):
+    """Style les Heading 1/2/3 natifs de Word en Times New Roman noir (pas
+    le bleu par defaut), afin qu'ils servent a la fois de rendu visuel et
+    de source pour le champ TOC (table des matieres automatique)."""
+    specs = {'Heading 1': 16, 'Heading 2': 14, 'Heading 3': 13}
+    for name, size in specs.items():
+        style = doc.styles[name]
+        style.font.name = 'Times New Roman'
+        style.font.size = Pt(size)
+        style.font.bold = True
+        style.font.italic = False
+        style.font.color.rgb = RGBColor(0, 0, 0)
+        rPr = style.element.get_or_add_rPr()
+        rFonts = rPr.find(qn('w:rFonts'))
+        if rFonts is None:
+            rFonts = OxmlElement('w:rFonts'); rPr.append(rFonts)
+        rFonts.set(qn('w:eastAsia'), 'Times New Roman')
+        pf = style.paragraph_format
+        pf.space_before = Pt(14)
+        pf.space_after = Pt(8)
+        pf.line_spacing_rule = WD_LINE_SPACING.SINGLE
+        pf.keep_with_next = True
+        pf.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+
 def main():
     doc = Document()
     set_base_styles(doc)
+    configure_heading_styles(doc)
 
     # --- Section 0 : couverture(s), sans numero de page ---
     sec0 = doc.sections[0]
@@ -445,7 +596,7 @@ def main():
     blocks = parse_blocks(CONTENU_MD.read_text(encoding='utf-8'))
     block_map = {title: body for title, body in blocks}
 
-    add_heading(doc, "REMERCIEMENTS", size=16)
+    add_heading(doc, "REMERCIEMENTS", level=1)
     render_body(doc, block_map["REMERCIEMENTS"])
     doc.add_page_break()
 
@@ -456,27 +607,30 @@ def main():
     add_list_tableaux_page(doc)
     doc.add_page_break()
 
-    add_heading(doc, "LISTE DES ABRÉVIATIONS, SIGLES ET ACRONYMES", size=16)
+    add_heading(doc, "LISTE DES ABRÉVIATIONS, SIGLES ET ACRONYMES", level=1)
     render_body(doc, block_map["LISTE DES ABRÉVIATIONS, SIGLES ET ACRONYMES"])
     doc.add_page_break()
 
-    add_heading(doc, "LISTE DES DÉFINITIONS", size=16)
+    add_heading(doc, "LISTE DES DÉFINITIONS", level=1)
     render_body(doc, block_map["LISTE DES DÉFINITIONS"])
     doc.add_page_break()
 
-    add_heading(doc, "RÉSUMÉ", size=16)
-    render_body(doc, block_map["RÉSUMÉ"])
-    add_heading(doc, "ABSTRACT", size=16)
-    render_body(doc, block_map["ABSTRACT"])
+    # Resume + Abstract : la charte impose "01 page maximum et en un bloc"
+    # -> interligne resserre (simple) specifiquement pour ce bloc.
+    h_res = add_heading(doc, "RÉSUMÉ", level=1)
+    h_res.paragraph_format.space_before = Pt(0)
+    add_compact_body(doc, block_map["RÉSUMÉ"])
+    h_abs = add_heading(doc, "ABSTRACT", level=1)
+    h_abs.paragraph_format.space_before = Pt(10)
+    add_compact_body(doc, block_map["ABSTRACT"])
 
     # --- Section 2 : corps du document, pagination arabe a partir de 1 ---
     sec2 = new_section(doc, unlink_footer=True)
     set_page_number_format(sec2, 'decimal', 1)
     set_footer_page_number(sec2)
 
-    add_heading(doc, "INTRODUCTION GÉNÉRALE", size=16)
+    add_heading(doc, "INTRODUCTION GÉNÉRALE", level=1)
     render_body(doc, block_map["INTRODUCTION GÉNÉRALE"])
-    doc.add_page_break()
 
     for title, body in blocks:
         m = re.match(r"^CHAPITRE (\d+) — (.+)$", title)
@@ -485,15 +639,16 @@ def main():
         num = int(m.group(1))
         chap_title = m.group(2)
         roman = ROMAN_CHAP.get(num, str(num))
+        start_chapter_section(doc)
         add_chapter_divider(doc, roman, chap_title)
         render_body(doc, body, chapter_num=num)
-        doc.add_page_break()
 
-    add_heading(doc, "CONCLUSION GÉNÉRALE, PERSPECTIVES ET RECOMMANDATIONS", size=15)
+    doc.add_page_break()
+    add_heading(doc, "CONCLUSION GÉNÉRALE, PERSPECTIVES ET RECOMMANDATIONS", level=1)
     render_body(doc, block_map["CONCLUSION GÉNÉRALE, PERSPECTIVES ET RECOMMANDATIONS"])
     doc.add_page_break()
 
-    add_heading(doc, "RÉFÉRENCES BIBLIOGRAPHIQUES", size=16)
+    add_heading(doc, "RÉFÉRENCES BIBLIOGRAPHIQUES", level=1)
     for line in block_map["RÉFÉRENCES BIBLIOGRAPHIQUES"]:
         if line.strip():
             p = doc.add_paragraph(line.strip())

@@ -23,6 +23,33 @@ def _is_authenticated(request) -> bool:
     return bool(request.user and request.user.is_authenticated)
 
 
+class IsSuperAdmin(BasePermission):
+    """Réservé exclusivement au super-administrateur."""
+
+    message = "Cette action est réservée au super-administrateur."
+
+    def has_permission(self, request, view):
+        return _is_authenticated(request) and request.user.role == Role.SUPERADMIN
+
+
+class IsSuperAdminOrReadOnlyConfig(BasePermission):
+    """
+    Configuration du solver (règles & objectifs) :
+    - Lecture (GET/HEAD/OPTIONS) : DAR + super-admin (le DAR consulte les règles
+      pour cocher/décocher sa génération).
+    - Écriture : super-admin uniquement.
+    """
+
+    message = "Seul le super-administrateur peut modifier la configuration du solver."
+
+    def has_permission(self, request, view):
+        if not _is_authenticated(request):
+            return False
+        if request.method in SAFE_METHODS:
+            return request.user.role in (Role.SUPERADMIN, Role.DAR)
+        return request.user.role == Role.SUPERADMIN
+
+
 class IsDAR(BasePermission):
     """Réservé exclusivement au compte DAR."""
 

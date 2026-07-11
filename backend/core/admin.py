@@ -20,8 +20,11 @@ from core.models import (
     Departement,
     Enseignant,
     Filiere,
+    FonctionObjectif,
     ImportPlanning,
     ImportPlanningHistorique,
+    JournalGeneration,
+    RegleSolver,
     Salle,
     Seance,
     Semaine,
@@ -177,6 +180,30 @@ class ArchivePlanningAdmin(admin.ModelAdmin):
         if obj.fichier_pdf:
             return format_html('<a href="{}" target="_blank">Ouvrir</a>', obj.fichier_pdf.url)
         return '—'
+
+
+# ── Configuration du solver (super-admin) ────────────────────────────────────
+@admin.register(RegleSolver)
+class RegleSolverAdmin(admin.ModelAdmin):
+    list_display  = ('code', 'nom', 'type_regle', 'categorie', 'verrouillee', 'active_par_defaut', 'ordre')
+    list_filter   = ('type_regle', 'categorie', 'verrouillee', 'active_par_defaut')
+    search_fields = ('code', 'nom')
+    ordering      = ('ordre', 'code')
+
+
+@admin.register(FonctionObjectif)
+class FonctionObjectifAdmin(admin.ModelAdmin):
+    list_display  = ('code', 'nom', 'sens', 'priorite', 'verrouillee', 'active_par_defaut')
+    list_filter   = ('sens', 'verrouillee', 'active_par_defaut')
+    search_fields = ('code', 'nom')
+    ordering      = ('priorite', 'code')
+
+
+@admin.register(JournalGeneration)
+class JournalGenerationAdmin(admin.ModelAdmin):
+    list_display    = ('semaine', 'lancee_par', 'lancee_le', 'taux', 'nb_placees', 'nb_non_placees', 'duree_ms', 'statut_solver')
+    list_filter     = ('statut_solver', 'semaine')
+    readonly_fields = ('lancee_le',)
 
 
 # Personnalisation des titres de l'admin

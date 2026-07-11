@@ -22,7 +22,8 @@ python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 cp ../.env.example ../.env  # éditer les valeurs
 python manage.py migrate
-python manage.py seed_demo  # données + comptes de test (dar/dar123, chef_tic/tic123…)
+python manage.py seed_demo        # données + comptes de test (dar/dar123, chef_tic/tic123…)
+python manage.py seed_superadmin  # compte super-admin + config solver fondatrice
 python manage.py runserver
 
 # Frontend (nouveau terminal)
@@ -32,6 +33,17 @@ npm run dev
 ```
 
 API : http://localhost:8000/api/  ·  UI : http://localhost:5173
+
+### Comptes
+
+| Rôle | Identifiant | Mot de passe |
+|---|---|---|
+| Super-administrateur | `FS-UEB` | `FS-UEB@#2026.` (à changer — surchargeable via `SUPERADMIN_PASSWORD` dans `.env`) |
+| DAR | `dar` | `dar123` |
+| Chef (ex. TIC) | `chef_tic` | `tic123` |
+
+Le **super-administrateur** gère les comptes (DAR + chefs) et la configuration du
+solver (règles/contraintes + fonctions objectif). Voir [`ARCHITECTURE.md`](./ARCHITECTURE.md#profil-super-administrateur--configuration-du-solver).
 
 ## Documentation
 
