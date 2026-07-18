@@ -59,6 +59,7 @@ class Command(BaseCommand):
         annee          = self._seed_annee_academique()
         self._seed_semaine_de_test(annee)
         self._seed_utilisateurs(departements)
+        self._seed_configuration_solver()
 
         self.stdout.write(self.style.SUCCESS("\n✓ Seed terminé avec succès."))
         self._afficher_resume()
@@ -252,6 +253,22 @@ class Command(BaseCommand):
     def _seed_utilisateurs(self, depts: dict[str, Departement]):
         self.stdout.write("• Utilisateurs…")
 
+        # Le super-administrateur (identifiants de settings / .env).
+        from django.conf import settings
+        superadmin, sa_created = User.objects.get_or_create(
+            username=settings.SUPERADMIN_USERNAME,
+            defaults={
+                'role':         Role.SUPERADMIN,
+                'first_name':   'Super',
+                'last_name':    'Administrateur',
+                'is_staff':     True,
+                'is_superuser': True,
+            },
+        )
+        if sa_created:
+            superadmin.set_password(settings.SUPERADMIN_PASSWORD)
+            superadmin.save()
+
         # Le DAR — unique par contrainte BDD.
         dar, created = User.objects.get_or_create(
             username='dar',
@@ -287,6 +304,13 @@ class Command(BaseCommand):
             if created:
                 chef.set_password(password)
                 chef.save()
+
+    # ── Configuration du solver (règles + objectifs fondateurs) ──────────────
+    def _seed_configuration_solver(self):
+        self.stdout.write("• Configuration du solver…")
+        from core.models import FonctionObjectif, RegleSolver
+        from core.seed_config import seeder_configuration
+        seeder_configuration(RegleSolver, FonctionObjectif)
 
     # ── Résumé final ─────────────────────────────────────────────────────────
     def _afficher_resume(self):

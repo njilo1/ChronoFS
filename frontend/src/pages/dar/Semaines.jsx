@@ -9,6 +9,7 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import AssistantResolutionModal from '../../components/ui/AssistantResolutionModal';
+import GenerationModal from '../../components/planning/GenerationModal';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import useThemeStore from '../../store/themeStore';
 
@@ -92,6 +93,7 @@ export default function Semaines() {
   const [resolWeek, setResolWeek]   = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);   // semaine à supprimer
   const [deleting, setDeleting]     = useState(false);
+  const [genSw, setGenSw]           = useState(null);   // semaine dont on ouvre la modale de génération
   const isDark = useThemeStore((s) => s.theme === 'dark');
   const navigate = useNavigate();
 
@@ -164,26 +166,39 @@ export default function Semaines() {
       return;
     }
 
+    // La génération ouvre la modale de sélection des règles (DAR).
+    if (key === 'generer') { setGenSw(sw); return; }
+
     setBusy(`${sw.id}-${key}`);
     try {
-      const { data } = await api.post(`/semaines/${sw.id}/${key}/`);
+      await api.post(`/semaines/${sw.id}/${key}/`);
       await load();
-      if (key === 'generer') {
-        const placees = data?.placees ?? 0;
-        const nonPlacees = data?.non_placees?.length ?? 0;
-        toast.success(`Planning généré : ${placees} séance(s) placée(s).`);
-        // Assistant de résolution : on ouvre la fenêtre de conseils dès qu'il
-        // reste des cours non placés (raisons + suggestions concrètes).
-        if (nonPlacees > 0) {
-          toast.warning(`${nonPlacees} cours non placé(s) — voir l'Assistant de résolution.`);
-          setResolution(data);
-          setResolWeek(sw.id);
-        }
-      } else {
-        toast.success(SUCCESS[key] ?? 'Action effectuée.');
-      }
+      toast.success(SUCCESS[key] ?? 'Action effectuée.');
     } catch (err) {
       toast.error(extractApiError(err, "L'action a échoué. Vérifiez l'état de la semaine puis réessayez."));
+    } finally { setBusy(null); }
+  };
+
+  // Génération effective avec la configuration de règles choisie (modale).
+  const runGeneration = async (config) => {
+    if (!genSw) return;
+    const sw = genSw;
+    setBusy(`${sw.id}-generer`);
+    try {
+      const { data } = await api.post(`/semaines/${sw.id}/generer/`, config);
+      await load();
+      const placees = data?.placees ?? 0;
+      const nonPlacees = data?.non_placees?.length ?? 0;
+      toast.success(`Planning généré : ${placees} séance(s) placée(s).`);
+      setGenSw(null);
+      // Assistant de résolution si des cours restent non placés.
+      if (nonPlacees > 0) {
+        toast.warning(`${nonPlacees} cours non placé(s) — voir l'Assistant de résolution.`);
+        setResolution(data);
+        setResolWeek(sw.id);
+      }
+    } catch (err) {
+      toast.error(extractApiError(err, "La génération a échoué. Vérifiez l'état de la semaine puis réessayez."));
     } finally { setBusy(null); }
   };
 
@@ -341,6 +356,14 @@ export default function Semaines() {
         result={resolution}
         semaineId={resolWeek}
         onApplied={load}
+      />
+
+      {/* Modale de sélection des règles avant génération */}
+      <GenerationModal
+        open={!!genSw}
+        onClose={() => setGenSw(null)}
+        onGenerate={runGeneration}
+        loading={busy === `${genSw?.id}-generer`}
       />
 
       {/* Confirmation de suppression — action destructive et irréversible. */}

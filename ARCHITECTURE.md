@@ -124,6 +124,38 @@ Le chef IMPOSE jour + créneau dans son fichier Excel ; le solver choisit **uniq
 
 **Pipeline** : `POST /api/semaines/<id>/generer/` → régénère les `Seance` en base → renvoie les cours non plaçables avec raisons lisibles (jamais « infeasible » brut) → DAR publie via `POST /api/semaines/<id>/publier/` → export PDF/DOCX. Taux de programmation par département : `GET /api/semaines/<id>/taux-programmation/`.
 
+## Profil Super-administrateur & configuration du solver
+
+La FS-UEB étant une faculté jeune et évolutive, un **3ᵉ rôle `SUPERADMIN`** (au-dessus de DAR et CHEF_DEPT) permet de faire évoluer les règles de génération **sans redéploiement**, tout en gardant le noyau de règles dures inviolable.
+
+### Rôle & comptes
+- `Role.SUPERADMIN` (`core/constants.py`). La contrainte `unique_dar_account` reste en vigueur.
+- Le super-admin gère les comptes **DAR + Chef** via `POST/PATCH/DELETE /api/comptes/` (+ `reset-password/`), même patron que la gestion des chefs par le DAR (mot de passe généré renvoyé une fois). Seed : `python manage.py seed_superadmin` (compte `FS-UEB`, surchargeable par `SUPERADMIN_USERNAME`/`SUPERADMIN_PASSWORD`).
+
+### Registre de configuration (jamais de code exécuté)
+Les contraintes et objectifs du solver sont décrits par des **métadonnées en BDD** reliées à des *handlers Python* du registre (`core/scheduling/registre.py`) — aucun `eval`/`exec`, aucune expression saisie par l'utilisateur.
+
+| Modèle (`core/models/configuration.py`) | Rôle |
+|---|---|
+| `RegleSolver` | Une contrainte : `code`, `type_regle` (DURE/SOUPLE), `categorie` (STATIQUE/DYNAMIQUE), `verrouillee`, `active_par_defaut`, `template`, `parametres` (JSON). |
+| `FonctionObjectif` | Un terme de l'objectif lexicographique : `priorite` (rang), `sens`, `verrouillee`, `template`, `parametres`. Le **poids `w` est dérivé des bornes** par le solver, jamais stocké. |
+| `JournalGeneration` | Audit d'une génération (config appliquée + résultat) → dashboard super-admin. |
+
+- **Règles statiques (H1–H9)** : seedées `verrouillee=True`, **toujours appliquées** par le solver (H1 structurel, H5/H6/H7 dans le pré-filtrage des salles, H2/H3/H4/H8/H9 via `REGISTRE_CONTRAINTES`). Affichées cochées+désactivées dans la modale DAR.
+- **Règles dynamiques** : composées par le super-admin depuis un **catalogue de templates paramétrés** (`REGISTRE_TEMPLATES` : `MAX_COURS_ENSEIGNANT_CRENEAU`, `MAX_COURS_JOUR_FILIERE`, `INTERDIRE_JOUR`, `INTERDIRE_CRENEAU`, `RESERVER_TYPE_SALLE_DEPARTEMENT`). Ajouter un template = ajouter une fonction builder + son schéma.
+- **Objectifs** : `REGISTRE_OBJECTIFS` reproduit à l'identique la cascade historique (test « golden ») ; le super-admin peut réordonner la `priorite` (drag-drop).
+
+### Sélection à la génération (DAR)
+`POST /api/semaines/<id>/generer/` accepte un corps **optionnel** (rétrocompatible) :
+`{ time_limit_sec, regles_desactivees[], regles_activees[], objectifs_desactives[], objectifs_activees[] }`.
+`resoudre_config()` (`generation_service.py`) calcule la config effective = **verrouillées (toujours)** ∪ dynamiques cochées. Toute tentative de désactiver une entrée verrouillée est ignorée. Une ligne `JournalGeneration` est écrite après chaque génération. Sans corps → comportement identique à l'existant.
+
+### Endpoints (permission `IsSuperAdmin`, lecture règles/objectifs ouverte au DAR)
+`/api/regles-solver/` (+ `templates/`), `/api/fonctions-objectif/` (+ `reordonner/`), `/api/comptes/`, `/api/journal-generation/`, `/api/stats-superadmin/`.
+
+### Frontend
+Espace `/superadmin` (`frontend/src/pages/superadmin/`) : **Dashboard** (KPIs, taux de réussite, cascade des objectifs), **Comptes**, **Contraintes**, **Objectifs** (drag-drop `@dnd-kit`), **Journal**. La modale DAR `components/planning/GenerationModal.jsx` est branchée dans `pages/dar/{Planning,Semaines}.jsx`.
+
 ## Points d'attention
 
 - **Tailwind CSS v3** uniquement — ne pas migrer vers v4.

@@ -20,9 +20,49 @@ from django.db import transaction
 from django.utils import timezone
 
 from core.constants import Creneau, Jour, StatutSemaine, TypeSalle
-from core.models import DemandeCours, Salle, Seance, Semaine
+from core.models import (
+    DemandeCours, FonctionObjectif, JournalGeneration, RegleSolver, Salle,
+    Seance, Semaine,
+)
 from core.scheduling.solver import PlanningSolver, ResultatPlanification
 from core.services.disponibilites import creneaux_bloques
+
+
+def resoudre_config(
+    regles_desactivees=None, regles_activees=None,
+    objectifs_desactives=None, objectifs_activees=None,
+):
+    """
+    Résout la configuration EFFECTIVE de génération depuis la BDD.
+
+    Règle/objectif ACTIF si : verrouillé (toujours) OU explicitement activé OU
+    (actif par défaut ET non explicitement désactivé). Les entrées verrouillées
+    sont TOUJOURS incluses — on ignore toute tentative de les retirer.
+
+    Retourne `(regles, objectifs)` — deux listes de dicts prêtes pour le solver,
+    ou `None` si la table est vide (le solver retombe alors sur ses défauts).
+    """
+    des_r = set(regles_desactivees or [])
+    act_r = set(regles_activees or [])
+    des_o = set(objectifs_desactives or [])
+    act_o = set(objectifs_activees or [])
+
+    regles = []
+    for r in RegleSolver.objects.all():
+        actif = r.verrouillee or (r.code in act_r) or (r.active_par_defaut and r.code not in des_r)
+        if actif:
+            regles.append({'code': r.code, 'template': r.template, 'parametres': r.parametres})
+
+    objectifs = []
+    for o in FonctionObjectif.objects.all():
+        actif = o.verrouillee or (o.code in act_o) or (o.active_par_defaut and o.code not in des_o)
+        if actif:
+            objectifs.append({
+                'code': o.code, 'template': o.template,
+                'parametres': o.parametres, 'priorite': o.priorite,
+            })
+
+    return (regles or None), (objectifs or None)
 
 
 def _label_jour(j):
@@ -53,7 +93,13 @@ def _decrire_demande(d: DemandeCours) -> dict:
 
 
 @transaction.atomic
-def generer_planning(semaine: Semaine, time_limit_sec: float = 30.0) -> dict:
+def generer_planning(
+    semaine: Semaine,
+    time_limit_sec: float = 30.0,
+    regles: list[dict] | None = None,
+    objectifs: list[dict] | None = None,
+    lancee_par=None,
+) -> dict:
     """
     Régénère intégralement le planning d'une semaine.
 
@@ -91,6 +137,12 @@ def generer_planning(semaine: Semaine, time_limit_sec: float = 30.0) -> dict:
         # Cas dégénéré : aucune demande → semaine vide mais marquée GENERE
         semaine.statut = StatutSemaine.GENERE
         semaine.save(update_fields=['statut'])
+        JournalGeneration.objects.create(
+            semaine=semaine, lancee_par=lancee_par,
+            regles_appliquees=[], objectifs_appliques=[],
+            nb_demandes=0, nb_placees=0, nb_non_placees=0,
+            taux=0.0, duree_ms=0, statut_solver='OPTIMAL',
+        )
         return {
             'placees':        0,
             'non_placees':    [],
@@ -102,9 +154,10 @@ def generer_planning(semaine: Semaine, time_limit_sec: float = 30.0) -> dict:
         }
 
     indispos = creneaux_bloques(semaine)
-    resultat: ResultatPlanification = (
-        PlanningSolver(demandes, salles, indispos=indispos).solve(time_limit_sec=time_limit_sec)
+    solver = PlanningSolver(
+        demandes, salles, indispos=indispos, regles=regles, objectifs=objectifs,
     )
+    resultat: ResultatPlanification = solver.solve(time_limit_sec=time_limit_sec)
 
     # ── 5. Créer les Seance correspondantes ──────────────────────────────────
     # On indexe les demandes par id pour reconstruire chaque Seance.
@@ -134,6 +187,21 @@ def generer_planning(semaine: Semaine, time_limit_sec: float = 30.0) -> dict:
     # ── 6. Bascule de statut ─────────────────────────────────────────────────
     semaine.statut = StatutSemaine.GENERE
     semaine.save(update_fields=['statut'])
+
+    # ── 7. Journal d'audit (config réellement appliquée + résultat) ──────────
+    nb_placees = len(resultat.placements)
+    JournalGeneration.objects.create(
+        semaine=semaine,
+        lancee_par=lancee_par,
+        regles_appliquees=[r['code'] for r in solver.regles],
+        objectifs_appliques=[o['code'] for o in solver.objectifs],
+        nb_demandes=resultat.nb_demandes,
+        nb_placees=nb_placees,
+        nb_non_placees=len(resultat.non_places),
+        taux=round(100 * nb_placees / resultat.nb_demandes, 1) if resultat.nb_demandes else 0.0,
+        duree_ms=resultat.duree_ms,
+        statut_solver=resultat.statut,
+    )
 
     return {
         'placees':        len(resultat.placements),

@@ -179,6 +179,13 @@ SPECTACULAR_SETTINGS = {
 }
 
 
+# ── Compte super-administrateur (seed) ───────────────────────────────────────
+# Identifiants du super-admin créés par `python manage.py seed_superadmin`.
+# Surchargeables par variables d'environnement (.env) — à changer en production.
+SUPERADMIN_USERNAME = config('SUPERADMIN_USERNAME', default='FS-UEB')
+SUPERADMIN_PASSWORD = config('SUPERADMIN_PASSWORD', default='FS-UEB@#2026.')
+
+
 # ── Celery (désactivé tant que le solver est synchrone) ──────────────────────
 USE_CELERY            = config('USE_CELERY', cast=bool, default=False)
 CELERY_BROKER_URL     = config('CELERY_BROKER_URL',     default='redis://localhost:6379/0')

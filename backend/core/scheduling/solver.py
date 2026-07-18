@@ -64,6 +64,17 @@ from core.constants import (
 )
 from core.models import DemandeCours, Salle
 from core.scheduling.conseiller import calculer_suggestions
+from core.scheduling.registre import (
+    DEFAUT_OBJECTIFS,
+    DEFAUT_REGLES,
+    ORDRE_CONTRAINTES_STATIQUES,
+    REGISTRE_CONTRAINTES,
+    REGISTRE_TEMPLATES,
+    SolverContext,
+    effectif_demande,
+    resoudre_handler_objectif,
+    valider_parametres,
+)
 
 
 # ── Capacité considérée comme infinie ────────────────────────────────────────
@@ -117,13 +128,28 @@ class PlanningSolver:
         result = PlanningSolver(demandes, salles).solve(time_limit_sec=30)
     """
 
-    def __init__(self, demandes: list[DemandeCours], salles: list[Salle], indispos=None):
+    def __init__(
+        self,
+        demandes: list[DemandeCours],
+        salles: list[Salle],
+        indispos=None,
+        regles: list[dict] | None = None,
+        objectifs: list[dict] | None = None,
+    ):
         # On matérialise sous forme de listes ordonnées pour pouvoir indexer.
         self.demandes: list[DemandeCours] = list(demandes)
         self.salles:   list[Salle]        = list(salles)
         # Créneaux où l'enseignant est indisponible : {(enseignant_id, jour, creneau)}.
         # Contrainte DURE : un cours sur un tel créneau ne sera jamais placé.
         self.indispos: set[tuple[int, int, int]] = set(indispos or ())
+
+        # Configuration pilotable (super-admin). `None` → configuration par
+        # défaut = comportement historique strictement identique. Chaque entrée
+        # est un dict {code, template?, parametres?} ; les objectifs portent en
+        # plus un `priorite`. Le solver ne touche JAMAIS à la BDD : la
+        # résolution de la config effective est faite en amont (generation_service).
+        self.regles:    list[dict] = list(regles)    if regles    is not None else list(DEFAUT_REGLES)
+        self.objectifs: list[dict] = list(objectifs) if objectifs is not None else list(DEFAUT_OBJECTIFS)
 
         # Index par id pour debug / API
         self._idx_demande_par_id: dict[int, int] = {d.id: i for i, d in enumerate(self.demandes)}
@@ -262,167 +288,90 @@ class PlanningSolver:
                 # Aucune salle candidate → placée toujours = 0
                 self.placee[d_idx] = 0
 
-        # ── H2 : ≤ 1 cours par (salle, jour, créneau) ────────────────────────
-        # Exception : le TERRAIN accueille plusieurs filières SBAA en même temps
-        # (capacité illimitée) → on ne lui applique pas l'unicité.
-        salle_creneau_vars: dict[tuple[int, int, int], list[cp_model.IntVar]] = defaultdict(list)
-        for (d_idx, s_idx), var in self.x.items():
-            if self.salles[s_idx].type_salle == TypeSalle.TERRAIN:
+        # ── Contexte partagé + agrégats (utilisés par les builders/objectifs) ─
+        ctx = self._construire_contexte()
+        self._contexte = ctx
+
+        # ── Contraintes dures « model-stage » (H2, H3, H4, H8, H9) ───────────
+        # Appliquées via le registre, dans l'ordre historique. Elles sont
+        # statiques/verrouillées : présentes par défaut → comportement inchangé.
+        codes_actifs = {r['code'] for r in self.regles}
+        for code in ORDRE_CONTRAINTES_STATIQUES:
+            if code in codes_actifs and code in REGISTRE_CONTRAINTES:
+                REGISTRE_CONTRAINTES[code](ctx)
+
+        # ── Contraintes DYNAMIQUES paramétrées (composées par le super-admin) ─
+        for r in self.regles:
+            template = r.get('template')
+            if not template:
                 continue
-            d = self.demandes[d_idx]
-            salle_creneau_vars[(s_idx, d.jour, d.creneau)].append(var)
-        for vars_groupe in salle_creneau_vars.values():
-            if len(vars_groupe) > 1:
-                self.model.Add(sum(vars_groupe) <= 1)
-
-        # ── H3 : ≤ 1 cours par (enseignant, jour, créneau) ───────────────────
-        enseignant_creneau: dict[tuple[int, int, int], list[int]] = defaultdict(list)
-        for d_idx, d in enumerate(self.demandes):
-            if d.enseignant_id is not None:
-                enseignant_creneau[(d.enseignant_id, d.jour, d.creneau)].append(d_idx)
-        for d_indices in enseignant_creneau.values():
-            if len(d_indices) > 1:
-                self.model.Add(sum(self.placee[i] for i in d_indices) <= 1)
-
-        # ── H4 : ≤ 1 cours par (filière, jour, créneau) ──────────────────────
-        filiere_creneau: dict[tuple[int, int, int], list[int]] = defaultdict(list)
-        for d_idx, d in enumerate(self.demandes):
-            filiere_creneau[(d.filiere_id, d.jour, d.creneau)].append(d_idx)
-        for d_indices in filiere_creneau.values():
-            if len(d_indices) > 1:
-                self.model.Add(sum(self.placee[i] for i in d_indices) <= 1)
-
-        # ── H8 : un enseignant n'enseigne que dans UNE ville par jour ────────
-        # Indicateurs bv[(prof, jour, ville)] : levés si le prof a un cours
-        # dans cette ville ce jour-là. On borne leur somme à 1 par (prof, jour),
-        # ce qui interdit tout aller-retour Ébolowa↔Monatélé dans la journée.
-        ej_villes: dict[tuple[int, int], set[str]] = defaultdict(set)
-        for (d_idx, s_idx) in self.x:
-            d = self.demandes[d_idx]
-            if d.enseignant_id is not None:
-                ej_villes[(d.enseignant_id, d.jour)].add(self.salles[s_idx].campus.ville)
-
-        bv: dict[tuple[int, int, str], cp_model.IntVar] = {}
-        for (e_id, jour), villes in ej_villes.items():
-            if len(villes) <= 1:
-                continue  # un seul choix de ville → aucune contrainte utile
-            for v in villes:
-                bv[(e_id, jour, v)] = self.model.NewBoolVar(f'bv_e{e_id}_j{jour}_{v}')
-            self.model.Add(sum(bv[(e_id, jour, v)] for v in villes) <= 1)
-
-        for (d_idx, s_idx), var in self.x.items():
-            d = self.demandes[d_idx]
-            if d.enseignant_id is None:
-                continue
-            key = (d.enseignant_id, d.jour, self.salles[s_idx].campus.ville)
-            if key in bv:
-                self.model.Add(var <= bv[key])
-
-        # ── H9 : une filière sur UN SEUL campus pour toute la semaine ────────
-        # Indicateurs bc[(filiere, campus)] : levés si la classe est placée
-        # dans ce campus. Somme bornée à 1 par filière → pas de saut de campus.
-        fil_campus: dict[int, set[int]] = defaultdict(set)
-        for (d_idx, s_idx) in self.x:
-            f_id = self.demandes[d_idx].filiere_id
-            fil_campus[f_id].add(self.salles[s_idx].campus_id)
-
-        bc: dict[tuple[int, int], cp_model.IntVar] = {}
-        for f_id, campus_ids in fil_campus.items():
-            if len(campus_ids) <= 1:
-                continue  # un seul campus possible → contrainte sans objet
-            for c_id in campus_ids:
-                bc[(f_id, c_id)] = self.model.NewBoolVar(f'bc_f{f_id}_c{c_id}')
-            self.model.Add(sum(bc[(f_id, c_id)] for c_id in campus_ids) <= 1)
-
-        for (d_idx, s_idx), var in self.x.items():
-            f_id = self.demandes[d_idx].filiere_id
-            c_id = self.salles[s_idx].campus_id
-            if (f_id, c_id) in bc:
-                self.model.Add(var <= bc[(f_id, c_id)])
+            spec = REGISTRE_TEMPLATES.get(template)
+            if spec is None:
+                continue  # template inconnu → ignoré silencieusement (déjà validé en amont)
+            params = valider_parametres(template, r.get('parametres'))
+            spec['builder'](ctx, params)
 
         # ── Objectif lexicographique ─────────────────────────────────────────
-        self._construire_objectif()
+        self._construire_objectif(ctx)
 
-    # ── Objectif (poids hiérarchiques) ──────────────────────────────────────
-    def _construire_objectif(self):
+    # ── Contexte + agrégats pré-calculés ────────────────────────────────────
+    def _construire_contexte(self) -> SolverContext:
+        """Assemble le SolverContext partagé par les builders et l'objectif."""
         n = len(self.demandes)
-        if n == 0:
-            return
-
         cap_max = max((s.capacite for s in self.salles), default=1)
         eff_max = max((self._effectif(d) for d in self.demandes), default=1)
 
-        # Nombre de demandes par filière → équité (les filières les plus
-        # gourmandes sont sacrifiées en premier à nombre de cours égal).
         nb_dem_fil: dict[int, int] = defaultdict(int)
         for d in self.demandes:
             nb_dem_fil[d.filiere_id] += 1
         max_dem = max(nb_dem_fil.values(), default=1)
 
-        # ── Continuité de salle : variables u[(filiere, salle)] ──────────────
-        # u = 1 dès qu'un cours de la filière (n'importe quel jour/créneau de la
-        # semaine) occupe cette salle. Minimiser Σu = minimiser le nombre de
-        # salles DISTINCTES par filière : une classe garde la même salle d'un
-        # créneau au suivant ET d'un jour à l'autre (ex. TIC L2 reste en salle M
-        # toute la semaine), et n'en change que lorsque c'est inévitable (salle
-        # occupée, TP au terrain, etc.).
-        fs_vars: dict[tuple[int, int], list[cp_model.IntVar]] = defaultdict(list)
-        for (d_idx, s_idx), var in self.x.items():
-            fs_vars[(self.demandes[d_idx].filiere_id, s_idx)].append(var)
-        u_cont: dict[tuple[int, int], cp_model.IntVar] = {}
-        for key, vars_grp in fs_vars.items():
-            u = self.model.NewBoolVar(f'u_f{key[0]}_s{key[1]}')
-            for v in vars_grp:
-                self.model.Add(v <= u)   # toute séance dans la salle lève u
-            u_cont[key] = u
+        # Borne du terme capacité (identique à l'historique) : sert au calage
+        # des poids lexicographiques.
+        cap_borne = FACTEUR_SURCHARGE * (cap_max + eff_max) + 1
 
-        # Bornes des termes de bas niveau, pour caler des poids garantissant
-        # un ordre LEXICOGRAPHIQUE strict (un cours placé en plus prime
-        # toujours sur n'importe quel gain de niveau inférieur) :
-        #   cours ≫ vacataires ≫ équité ≫ continuité ≫ capacité.
-        cap_borne = FACTEUR_SURCHARGE * (cap_max + eff_max) + 1   # mismatch max / placement
-        w_cap = 1                                                 # 5. capacité
-        total_cap = n * cap_borne
-        w_cont = total_cap + 1                                    # 4. continuité salle
-        total_cont = len(u_cont) * w_cont
-        w3 = total_cont + total_cap + 1                           # 3. équité
-        total3 = (n * max_dem) * w3
-        w2 = total3 + total_cont + total_cap + 1                  # 2. vacataires
-        total2 = n * w2
-        w1 = total2 + total3 + total_cont + total_cap + 1         # 1. nombre de cours
+        return SolverContext(
+            model=self.model,
+            demandes=self.demandes,
+            salles=self.salles,
+            x=self.x,
+            placee=self.placee,
+            n=n,
+            cap_max=cap_max,
+            eff_max=eff_max,
+            max_dem=max_dem,
+            cap_borne=cap_borne,
+            nb_dem_fil=nb_dem_fil,
+        )
 
-        termes = []
-        for d_idx, d in enumerate(self.demandes):
-            placee = self.placee[d_idx]
-            # 1. Nombre de cours placés (priorité maximale)
-            termes.append(w1 * placee)
-            # 2. Priorité vacataires
-            if self._est_vacataire(d):
-                termes.append(w2 * placee)
-            # 3. Équité : bonus d'autant plus fort que la filière est PEU
-            #    programmée (max_dem − nb_demandes_filiere).
-            bonus_equite = max_dem - nb_dem_fil[d.filiere_id]
-            if bonus_equite > 0:
-                termes.append((w3 * bonus_equite) * placee)
+    # ── Objectif (cascade lexicographique, poids dérivé des bornes) ─────────
+    def _construire_objectif(self, ctx: SolverContext):
+        """
+        Construit l'objectif à partir des fonctions objectif ACTIVES, triées par
+        priorité (1 = plus prioritaire). Les poids sont dérivés bottom-up des
+        bornes de chaque terme pour garantir un ordre LEXICOGRAPHIQUE strict :
+        un gain d'un niveau prime toujours sur tout gain d'un niveau inférieur.
 
-        # 4. Continuité : pénalité par salle distincte utilisée par la filière.
-        for u in u_cont.values():
-            termes.append(-w_cont * u)
+        La cascade reproduit EXACTEMENT les poids historiques lorsque les 5
+        objectifs par défaut sont actifs dans l'ordre 1→5 (cf. test « golden »).
+        """
+        if ctx.n == 0:
+            return
 
-        # 5. Capacité ≈ effectif : pénalité (gaspillage ou surcharge) à minimiser.
-        for (d_idx, s_idx), var in self.x.items():
-            effectif = self._effectif(self.demandes[d_idx])
-            capacite = self.salles[s_idx].capacite
-            if self.salles[s_idx].type_salle in CAPACITE_ILLIMITEE_TYPES:
-                cout = 0
-            elif capacite >= effectif:
-                cout = capacite - effectif                       # gaspillage de places
-            else:
-                cout = (effectif - capacite) * FACTEUR_SURCHARGE  # forçage = pénalisé
-            if cout:
-                termes.append(-(w_cap * cout) * var)
+        # Du moins prioritaire (traité en premier, poids le plus faible) au plus
+        # prioritaire. `running_total` = somme des contributions maximales des
+        # niveaux déjà posés → le poids du niveau courant les domine toutes.
+        objs = sorted(self.objectifs, key=lambda o: o.get('priorite', 1), reverse=True)
+        running_total = 0
+        for o in objs:
+            handler = resoudre_handler_objectif(o)
+            if handler is None:
+                continue
+            w = running_total + 1
+            unites_max = handler(ctx, w, o.get('parametres') or {})
+            running_total += w * unites_max
 
-        self.model.Maximize(sum(termes))
+        self.model.Maximize(sum(ctx.termes))
 
     # ── Étape 3 : lancer la résolution ──────────────────────────────────────
     def solve(self, time_limit_sec: float = 30.0) -> ResultatPlanification:

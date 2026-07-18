@@ -135,7 +135,10 @@ export default function Login() {
     setLoading(true);
     try {
       const data = await login(form.username, form.password);
-      navigate(data.role === 'DAR' ? '/dar' : '/chef', { replace: true });
+      const dest = data.role === 'SUPERADMIN' ? '/superadmin'
+                 : data.role === 'DAR'        ? '/dar'
+                 : '/chef';
+      navigate(dest, { replace: true });
     } catch {
       setError("Identifiants incorrects. Vérifiez vos informations.");
     } finally {
