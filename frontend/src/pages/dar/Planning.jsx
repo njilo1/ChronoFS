@@ -10,6 +10,7 @@ import { toast } from '../../store/toastStore';
 import { extractApiError } from '../../services/apiError';
 import GrilleEDT from '../../components/planning/GrilleEDT';
 import SeanceEditModal from '../../components/planning/SeanceEditModal';
+import GenerationModal from '../../components/planning/GenerationModal';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { SkeletonCard } from '../../components/ui/Skeleton';
@@ -64,6 +65,7 @@ export default function Planning() {
   const [annulId, setAnnulId] = useState(null);
   const [recuperables, setRecuperables] = useState([]);
   const [applyId, setApplyId] = useState(null);
+  const [genOpen, setGenOpen] = useState(false);
 
   const loadSeances = useCallback(async () => {
     const r = await api.get(`/semaines/${id}/seances/`);
@@ -138,22 +140,33 @@ export default function Planning() {
 
   // ── Actions de workflow (ouvrir / clôturer / générer / publier) ────────
   const handleWorkflow = async (key) => {
+    // La génération passe par la modale de sélection des règles (DAR).
+    if (key === 'generer') { setGenOpen(true); return; }
     setBusy(key);
     try {
-      const { data } = await api.post(`/semaines/${id}/${key}/`);
+      await api.post(`/semaines/${id}/${key}/`);
       await Promise.all([loadSemaine(), loadSeances()]);
-      if (key === 'generer') {
-        const placees = data?.placees ?? 0;
-        const nonPlacees = data?.non_placees?.length ?? 0;
-        toast.success(`Planning généré : ${placees} séance(s) placée(s).`);
-        if (nonPlacees > 0) toast.warning(`${nonPlacees} cours n'ont pas pu être placés.`);
-      } else {
-        toast.success({
-          'ouvrir-imports':   'Imports ouverts.',
-          'cloturer-imports': 'Imports clôturés.',
-          'publier':          'Semaine publiée avec succès.',
-        }[key] ?? 'Action effectuée.');
-      }
+      toast.success({
+        'ouvrir-imports':   'Imports ouverts.',
+        'cloturer-imports': 'Imports clôturés.',
+        'publier':          'Semaine publiée avec succès.',
+      }[key] ?? 'Action effectuée.');
+    } catch (err) {
+      toast.error(extractApiError(err));
+    } finally { setBusy(null); }
+  };
+
+  // Génération effective avec la configuration de règles choisie dans la modale.
+  const runGeneration = async (config) => {
+    setBusy('generer');
+    try {
+      const { data } = await api.post(`/semaines/${id}/generer/`, config);
+      await Promise.all([loadSemaine(), loadSeances()]);
+      const placees = data?.placees ?? 0;
+      const nonPlacees = data?.non_placees?.length ?? 0;
+      toast.success(`Planning généré : ${placees} séance(s) placée(s).`);
+      if (nonPlacees > 0) toast.warning(`${nonPlacees} cours n'ont pas pu être placés.`);
+      setGenOpen(false);
     } catch (err) {
       toast.error(extractApiError(err));
     } finally { setBusy(null); }
@@ -464,6 +477,14 @@ export default function Planning() {
         ues={ues}
         onSave={handleEditSave}
         onClose={() => setEditSeance(null)}
+      />
+
+      {/* Modale de sélection des règles avant génération */}
+      <GenerationModal
+        open={genOpen}
+        onClose={() => setGenOpen(false)}
+        onGenerate={runGeneration}
+        loading={busy === 'generer'}
       />
     </div>
   );

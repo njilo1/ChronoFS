@@ -31,6 +31,12 @@ from .seances import SeanceEditSerializer, SeanceSerializer
 from .archives import ArchivePlanningSerializer
 from .notifications import NotificationSerializer
 from .disponibilites import IndisponibiliteSerializer
+from .configuration import (
+    FonctionObjectifSerializer,
+    JournalGenerationSerializer,
+    RegleSolverSerializer,
+)
+from .comptes import CompteCreateSerializer, CompteSerializer
 
 
 __all__ = [
@@ -57,4 +63,9 @@ __all__ = [
     'NotificationSerializer',
     # Disponibilités
     'IndisponibiliteSerializer',
+    # Configuration solver (super-admin)
+    'RegleSolverSerializer', 'FonctionObjectifSerializer',
+    'JournalGenerationSerializer',
+    # Comptes (super-admin)
+    'CompteSerializer', 'CompteCreateSerializer',
 ]

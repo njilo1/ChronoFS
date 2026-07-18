@@ -17,12 +17,15 @@ from core.views import (
     AnneeAcademiqueViewSet,
     CampusViewSet,
     ChefDeptViewSet,
+    CompteViewSet,
     DepartementViewSet,
     EnseignantViewSet,
     ChangePasswordView,
     FiliereViewSet,
+    FonctionObjectifViewSet,
     ImportPlanningViewSet,
     ImportPreviewView,
+    JournalGenerationViewSet,
     LoginView,
     MeView,
     MesEnseignantsViewSet,
@@ -32,9 +35,11 @@ from core.views import (
     NotificationViewSet,
     PlanningActuelView,
     RefreshView,
+    RegleSolverViewSet,
     SalleViewSet,
     SeanceViewSet,
     SemaineViewSet,
+    StatsSuperAdminView,
     TemplateExcelView,
     UEViewSet,
 )
@@ -54,6 +59,12 @@ router.register('chefs-departement',   ChefDeptViewSet,         basename='chef-d
 router.register('imports',             ImportPlanningViewSet,   basename='import')
 router.register('seances',             SeanceViewSet,           basename='seance')
 router.register('notifications',       NotificationViewSet,     basename='notification')
+
+# ── Configuration du solver + comptes (super-admin) ──────────────────────────
+router.register('regles-solver',       RegleSolverViewSet,      basename='regle-solver')
+router.register('fonctions-objectif',  FonctionObjectifViewSet, basename='fonction-objectif')
+router.register('journal-generation',  JournalGenerationViewSet, basename='journal-generation')
+router.register('comptes',             CompteViewSet,           basename='compte')
 
 
 # ── Router secondaire (chef de département) ──────────────────────────────────
@@ -80,6 +91,9 @@ urlpatterns = [
 
     # Planning en vigueur (semaine PUBLIE/GENERE la plus récente, filtré par dept du chef)
     path('planning-actuel/',   PlanningActuelView.as_view(), name='planning-actuel'),
+
+    # Statistiques agrégées du tableau de bord super-admin
+    path('stats-superadmin/',  StatsSuperAdminView.as_view(), name='stats-superadmin'),
 
     # Router principal (référentiel DAR + semaines + chefs-departement + imports)
     path('', include(router.urls)),

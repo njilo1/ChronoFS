@@ -37,7 +37,7 @@ from core.models import (
 from core.permissions import IsDAR, IsDARorReadOnly
 from core.services.disponibilites import creneaux_bloques
 from core.services.notifications import notifier_chefs
-from core.scheduling.generation_service import generer_planning
+from core.scheduling.generation_service import generer_planning, resoudre_config
 from core.serializers import (
     ArchivePlanningSerializer,
     SeanceSerializer,
@@ -204,7 +204,19 @@ class SemaineViewSet(viewsets.ModelViewSet):
             )
 
         time_limit = float(request.data.get('time_limit_sec', 30))
-        resume = generer_planning(semaine, time_limit_sec=time_limit)
+        # Configuration choisie par le DAR dans la modale de génération. Les
+        # règles/objectifs verrouillés sont toujours appliqués (cf. resoudre_config).
+        regles, objectifs = resoudre_config(
+            regles_desactivees=request.data.get('regles_desactivees'),
+            regles_activees=request.data.get('regles_activees'),
+            objectifs_desactives=request.data.get('objectifs_desactives'),
+            objectifs_activees=request.data.get('objectifs_activees'),
+        )
+        resume = generer_planning(
+            semaine, time_limit_sec=time_limit,
+            regles=regles, objectifs=objectifs,
+            lancee_par=request.user if request.user.is_authenticated else None,
+        )
         return Response(resume)
 
     # ── Placement manuel d'un cours (Assistant de résolution — niveau 2) ──────

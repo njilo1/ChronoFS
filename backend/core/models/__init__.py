@@ -30,6 +30,11 @@ from .hebdomadaire import (
 )
 from .notifications import Notification
 from .disponibilites import IndisponibiliteEnseignant
+from .configuration import (
+    FonctionObjectif,
+    JournalGeneration,
+    RegleSolver,
+)
 
 
 __all__ = [
@@ -41,4 +46,7 @@ __all__ = [
     'ImportPlanning', 'ImportPlanningHistorique',
     'DemandeCours', 'Seance', 'ArchivePlanning',
     'Notification',
+    'IndisponibiliteEnseignant',
+    # Configuration du solver (super-admin)
+    'RegleSolver', 'FonctionObjectif', 'JournalGeneration',
 ]

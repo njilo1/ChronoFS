@@ -25,6 +25,12 @@ import ChefEnseignants    from './pages/chef-dept/mon-departement/Enseignants';
 import HistoriqueEnvois   from './pages/chef-dept/HistoriqueEnvois';
 import ConsulterPlanning  from './pages/chef-dept/ConsulterPlanning';
 
+import AdminDashboard     from './pages/superadmin/Dashboard';
+import AdminComptes       from './pages/superadmin/Comptes';
+import AdminContraintes   from './pages/superadmin/Contraintes';
+import AdminObjectifs     from './pages/superadmin/Objectifs';
+import AdminJournal       from './pages/superadmin/Journal';
+
 import Offline            from './pages/Offline';
 
 function Protected({ children, role: required }) {
@@ -37,8 +43,9 @@ function Protected({ children, role: required }) {
 function RoleRedirect() {
   const { token, role } = useAuthStore();
   if (!token) return <Navigate to="/login" replace />;
-  if (role === 'DAR')       return <Navigate to="/dar"  replace />;
-  if (role === 'CHEF_DEPT') return <Navigate to="/chef" replace />;
+  if (role === 'SUPERADMIN') return <Navigate to="/superadmin" replace />;
+  if (role === 'DAR')        return <Navigate to="/dar"  replace />;
+  if (role === 'CHEF_DEPT')  return <Navigate to="/chef" replace />;
   return <Navigate to="/login" replace />;
 }
 
@@ -71,6 +78,15 @@ export default function App() {
           <Route path="referentiel/annees-academiques"         element={<AnneesAcademiques />} />
           <Route path="chefs"                                  element={<DarChefs />} />
           <Route path="archives"                               element={<DarArchives />} />
+        </Route>
+
+        {/* Super-administrateur */}
+        <Route path="/superadmin" element={<Protected role="SUPERADMIN"><Layout /></Protected>}>
+          <Route index                element={<AdminDashboard />} />
+          <Route path="comptes"       element={<AdminComptes />} />
+          <Route path="contraintes"   element={<AdminContraintes />} />
+          <Route path="objectifs"     element={<AdminObjectifs />} />
+          <Route path="journal"       element={<AdminJournal />} />
         </Route>
 
         {/* Chef Dept */}
